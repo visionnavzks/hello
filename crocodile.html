@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>骑自行车的鳄鱼</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f0f4f8;
+      font-family: system-ui, sans-serif;
+    }
+    .canvas-wrapper {
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    svg {
+      width: 100%;
+      max-width: 600px;
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="canvas-wrapper">
+    <svg viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
+      <!-- 背景 -->
+      <rect width="500" height="400" fill="#e0f7fa" rx="8"/>
+      <!-- 云朵 -->
+      <path d="M100 80 Q110 60 130 70 Q140 50 160 70 Q170 65 175 85 Q160 100 140 95 Q120 105 110 90 Z" fill="#ffffff" opacity="0.9"/>
+      <path d="M350 120 Q360 100 380 110 Q390 90 410 110 Q420 105 425 125 Q410 140 390 135 Q370 145 360 130 Z" fill="#ffffff" opacity="0.8"/>
+      
+      <!-- 地面 -->
+      <rect y="320" width="500" height="80" fill="#8bc34a" rx="8"/>
+      <line x1="0" y1="320" x2="500" y2="320" stroke="#558b2f" stroke-width="3"/>
+      <!-- 草地纹理 -->
+      <path d="M50 330 L55 315 L60 330 M150 340 L158 325 L166 340 M300 335 L306 320 L312 335 M420 345 L428 330 L436 345" fill="none" stroke="#689f38" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- 自行车 -->
+      <g id="bicycle">
+        <!-- 后轮 -->
+        <circle cx="170" cy="280" r="40" fill="none" stroke="#333" stroke-width="4"/>
+        <circle cx="170" cy="280" r="36" fill="none" stroke="#555" stroke-width="1"/>
+        <g stroke="#555" stroke-width="2">
+          <line x1="170" y1="240" x2="170" y2="320"/>
+          <line x1="130" y1="280" x2="210" y2="280"/>
+          <line x1="142" y1="252" x2="198" y2="308"/>
+          <line x1="142" y1="308" x2="198" y2="252"/>
+        </g>
+
+        <!-- 前轮 -->
+        <circle cx="330" cy="280" r="40" fill="none" stroke="#333" stroke-width="4"/>
+        <circle cx="330" cy="280" r="36" fill="none" stroke="#555" stroke-width="1"/>
+        <g stroke="#555" stroke-width="2">
+          <line x1="330" y1="240" x2="330" y2="320"/>
+          <line x1="290" y1="280" x2="370" y2="280"/>
+          <line x1="302" y1="252" x2="358" y2="308"/>
+          <line x1="302" y1="308" x2="358" y2="252"/>
+        </g>
+
+        <!-- 车架 (红色) -->
+        <path d="M170 280 L230 210 L300 210 L330 280" fill="none" stroke="#e53935" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M230 210 L250 280 L300 210" fill="none" stroke="#e53935" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="170" y1="280" x2="250" y2="280" stroke="#e53935" stroke-width="6" stroke-linecap="round"/>
+
+        <!-- 座管 & 车座 -->
+        <line x1="230" y1="210" x2="218" y2="188" stroke="#333" stroke-width="5"/>
+        <ellipse cx="212" cy="185" rx="22" ry="9" fill="#424242"/>
+
+        <!-- 把立 & 车把 -->
+        <line x1="300" y1="210" x2="308" y2="178" stroke="#333" stroke-width="5"/>
+        <path d="M292 172 Q308 160 322 172" fill="none" stroke="#333" stroke-width="5" stroke-linecap="round"/>
+
+        <!-- 脚踏 & 中轴 -->
+        <circle cx="250" cy="280" r="12" fill="#555"/>
+        <circle cx="250" cy="280" r="4" fill="#999"/>
+        <line x1="250" y1="280" x2="225" y2="298" stroke="#333" stroke-width="4"/>
+        <line x1="250" y1="280" x2="275" y2="262" stroke="#333" stroke-width="4"/>
+        <rect x="215" y="293" width="22" height="9" rx="3" fill="#333"/>
+        <rect x="263" y="257" width="22" height="9" rx="3" fill="#333"/>
+      </g>
+
+      <!-- 鳄鱼 -->
+      <g id="crocodile">
+        <!-- 尾巴 -->
+        <path d="M185 195 Q130 215 110 180 Q130 155 175 170" fill="#4caf50" stroke="#2e7d32" stroke-width="2"/>
+        <path d="M120 195 L105 182 L125 170 L112 158" fill="none" stroke="#2e7d32" stroke-width="3" stroke-linecap="round"/>
+        <path d="M130 200 L118 188 L138 178 L125 165" fill="none" stroke="#2e7d32" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- 身体 -->
+        <ellipse cx="235" cy="195" rx="58" ry="38" fill="#4caf50" stroke="#2e7d32" stroke-width="2"/>
+        <!-- 腹部 -->
+        <path d="M185 215 Q235 240 285 215" fill="#81c784" stroke="none"/>
+        <!-- 背部斑点 -->
+        <circle cx="210" cy="175" r="4" fill="#2e7d32"/>
+        <circle cx="238" cy="170" r="3" fill="#2e7d32"/>
+        <circle cx="260" cy="182" r="4" fill="#2e7d32"/>
+        <circle cx="200" cy="200" r="3" fill="#2e7d32"/>
+        <circle cx="250" cy="168" r="2.5" fill="#2e7d32"/>
+
+        <!-- 头部 & 嘴巴 -->
+        <path d="M265 180 Q300 175 325 192 Q335 205 315 215 Q285 220 265 205 Z" fill="#4caf50" stroke="#2e7d32" stroke-width="2"/>
+        <!-- 眼睛 -->
+        <circle cx="290" cy="185" r="7" fill="#fff"/>
+        <circle cx="291" cy="184" r="3" fill="#000"/>
+        <circle cx="293" cy="182" r="1.2" fill="#fff"/>
+        <!-- 鼻孔 -->
+        <circle cx="318" cy="195" r="2" fill="#2e7d32"/>
+        <!-- 牙齿 -->
+        <path d="M300 212 L303 205 L306 212" fill="#fff" stroke="#2e7d32" stroke-width="1"/>
+        <path d="M308 213 L311 206 L314 213" fill="#fff" stroke="#2e7d32" stroke-width="1"/>
+        <line x1="285" y1="210" x2="315" y2="205" stroke="#2e7d32" stroke-width="1.5"/>
+
+        <!-- 左前肢 (握住车把) -->
+        <path d="M275 200 Q295 185 308 170" fill="none" stroke="#4caf50" stroke-width="13" stroke-linecap="round"/>
+        <circle cx="308" cy="170" r="6" fill="#4caf50" stroke="#2e7d32" stroke-width="1.5"/>
+
+        <!-- 右前肢 (身体后方) -->
+        <path d="M255 205 Q280 195 315 180" fill="none" stroke="#388e3c" stroke-width="10" stroke-linecap="round"/>
+
+        <!-- 左后腿 (踩左脚踏) -->
+        <path d="M230 220 Q245 260 230 295" fill="none" stroke="#4caf50" stroke-width="14" stroke-linecap="round"/>
+        <path d="M222 290 Q230 300 242 292" fill="none" stroke="#4caf50" stroke-width="9" stroke-linecap="round"/>
+
+        <!-- 右后腿 (踩右脚踏) -->
+        <path d="M255 215 Q270 245 278 260" fill="none" stroke="#388e3c" stroke-width="11" stroke-linecap="round"/>
+        <path d="M270 255 Q278 265 285 258" fill="none" stroke="#388e3c" stroke-width="8" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
+</body>
+</html>

@@ -1,0 +1,1 @@
+Nothing needs to be added to .gitignore since only a single HTML file (`crocodile.html`) was added, which is a source file and should be tracked in version control. No build artifacts, dependencies, temporary files, or other ignorable content were present in the changes.

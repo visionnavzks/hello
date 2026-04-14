@@ -1,0 +1,17 @@
+```
+# Compiled and build artifacts
+*.o
+*.obj
+*.out
+
+# Dependencies
+build/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Editors
+.vscode/
+.idea/
+```

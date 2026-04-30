@@ -77,9 +77,14 @@ games.forEach((game, index) => {
   if (!game.rules) {
     throw new Error(`${label} is missing playable rules`);
   }
-  ['mode', 'target', 'hazard', 'objective', 'winScore', 'lives', 'timeLimit', 'speed'].forEach((field) => {
-    if (game.rules[field] === undefined || game.rules[field] === '') {
+  ['mode', 'target', 'hazard', 'objective'].forEach((field) => {
+    if (typeof game.rules[field] !== 'string' || game.rules[field].trim() === '') {
       throw new Error(`${label} is missing rules.${field}`);
+    }
+  });
+  ['winScore', 'lives', 'timeLimit', 'speed'].forEach((field) => {
+    if (!Number.isFinite(game.rules[field]) || game.rules[field] <= 0) {
+      throw new Error(`${label} must have a positive numeric rules.${field}`);
     }
   });
   if (!supportedModes.has(game.rules.mode)) {

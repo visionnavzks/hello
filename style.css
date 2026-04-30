@@ -36,7 +36,8 @@ input {
 .dock,
 .hero-window,
 .game-window,
-.detail-window {
+.detail-window,
+.player-window {
   border: 1px solid rgba(255, 255, 255, 0.28);
   background: var(--glass);
   backdrop-filter: blur(24px) saturate(160%);
@@ -74,7 +75,8 @@ input {
 
 .hero-window,
 .game-window,
-.detail-window {
+.detail-window,
+.player-window {
   border-radius: 1.35rem;
 }
 
@@ -256,7 +258,8 @@ h1 {
 }
 
 .play-button,
-.dock button {
+.dock button,
+.game-hud button {
   border: 0;
   color: var(--text);
   cursor: pointer;
@@ -294,6 +297,156 @@ h1 {
   background: rgba(255, 255, 255, 0.42);
 }
 
+.player-window {
+  position: fixed;
+  inset: 4rem 2rem 6rem;
+  z-index: 30;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+.player-window[hidden] {
+  display: none;
+}
+
+.player-body {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 0.85rem;
+  min-height: 0;
+  padding: 1rem;
+}
+
+.game-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-weight: 700;
+}
+
+.game-hud button {
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+}
+
+.player-instructions,
+.game-status {
+  margin: 0;
+  color: var(--muted);
+}
+
+.game-status {
+  min-height: 1.5rem;
+  font-weight: 700;
+}
+
+.game-stage {
+  position: relative;
+  min-height: 360px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 1.1rem;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    rgba(15, 23, 42, 0.34);
+  background-size: 36px 36px;
+  outline: none;
+}
+
+.tap-target,
+.falling-item,
+.racer-player,
+.racer-obstacle,
+.racer-coin,
+.catcher-basket {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 0;
+  user-select: none;
+}
+
+.tap-target {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 1.4rem;
+  color: #fff;
+  cursor: pointer;
+  font-size: 2rem;
+  background: linear-gradient(135deg, #38bdf8, #a855f7);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.32);
+}
+
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(64px, 1fr));
+  gap: 0.85rem;
+  width: min(560px, 100%);
+  margin: 1rem auto;
+  padding: 0.5rem;
+}
+
+.memory-card {
+  min-height: 5.6rem;
+  border: 0;
+  border-radius: 1rem;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 2rem;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.memory-card.matched,
+.memory-card.revealed {
+  background: linear-gradient(135deg, #22c55e, #14b8a6);
+}
+
+.arcade-controls {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.arcade-controls button {
+  width: 3.4rem;
+  height: 3.4rem;
+  border: 0;
+  border-radius: 1rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.24);
+  cursor: pointer;
+  font-size: 1.35rem;
+}
+
+.racer-lane {
+  position: absolute;
+  inset-block: 0;
+  width: 33.333%;
+  border-inline: 1px dashed rgba(255, 255, 255, 0.22);
+}
+
+.racer-player,
+.racer-obstacle,
+.racer-coin,
+.falling-item,
+.catcher-basket {
+  font-size: 2.4rem;
+}
+
+.catcher-basket {
+  width: 5rem;
+  height: 3.4rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.16);
+}
+
 @media (max-width: 720px) {
   .desktop {
     padding-inline: 1rem;
@@ -312,5 +465,21 @@ h1 {
   .detail-window {
     right: 1rem;
     bottom: 6rem;
+  }
+
+  .player-window {
+    inset: 3.2rem 0.75rem 5.4rem;
+  }
+
+  .game-stage {
+    min-height: 310px;
+  }
+
+  .memory-grid {
+    gap: 0.55rem;
+  }
+
+  .memory-card {
+    min-height: 4.4rem;
   }
 }

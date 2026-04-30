@@ -1,7 +1,7 @@
 import math
-from mathutils import Vector
 
 import bpy
+from mathutils import Vector
 
 
 SCENE_NAME = "Crocodile Riding a Bicycle on a Mountain Road"
@@ -97,7 +97,7 @@ def add_between(name, start, end, radius, material, vertices=16):
     return obj
 
 
-def add_text(name, text, location, size, material, rotation=(math.radians(72), 0, math.radians(0))):
+def add_text(name, text, location, size, material, rotation=(math.radians(72), 0, 0)):
     bpy.ops.object.text_add(location=location, rotation=rotation)
     obj = bpy.context.object
     obj.name = name
@@ -301,9 +301,9 @@ def create_crocodile(materials):
             location=(x, 0, 2.17 + 0.05 * math.sin(i)),
             rotation=(math.radians(90), 0, math.radians(30)),
         )
-        scale = bpy.context.object
-        scale.name = f"raised back scale {i + 1}"
-        assign_material(scale, materials["dark_croc"])
+        back_scale = bpy.context.object
+        back_scale.name = f"raised back scale {i + 1}"
+        assign_material(back_scale, materials["dark_croc"])
 
     for i in range(14):
         x = 1.25 + 0.06 * (i % 7)

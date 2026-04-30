@@ -393,7 +393,7 @@
     return false;
   }
   function randomCell(g) { let c; do { c = { x: Math.floor(rnd(0, g.cols)), y: Math.floor(rnd(0, g.rows)) }; } while (g.snake?.some(s => sameCell(s, c))); return c; }
-  function snakeOutOfBounds(g, c) { return c.x < 0 || c.y < 0 || c.x * g.grid + g.grid > W || c.y * g.grid + g.grid > H; }
+  function snakeOutOfBounds(g, c) { return c.x < 0 || c.y < 0 || c.x >= g.cols || c.y >= g.rows; }
   function sameCell(a, b) { return a.x === b.x && a.y === b.y; }
   function setSnakeDir(g) {
     const desired = keys.has('ArrowUp') || keys.has('w') ? { x: 0, y: -1 } : keys.has('ArrowDown') || keys.has('s') ? { x: 0, y: 1 } : keys.has('ArrowLeft') || keys.has('a') ? { x: -1, y: 0 } : keys.has('ArrowRight') || keys.has('d') ? { x: 1, y: 0 } : g.next;
@@ -440,7 +440,7 @@
   function drawPlayer(p, color, ship) { drawRect(p, color); if (ship) drawCircle(p.x + p.w / 2, p.y - 5, 7, '#fff'); }
   function drawPaddle(p, color) { drawRect(p, color); }
   function drawCell(c, color, size) { drawRect({ x: c.x * size + 1, y: c.y * size + 1, w: size - 2, h: size - 2 }, color); }
-  function centerText(text, x, y, size, color) { ctx.fillStyle = color; ctx.font = `900 ${size}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y); }
+  function centerText(text, x, y, size, color) { ctx.fillStyle = color; ctx.font = `900 ${size}px \"Microsoft YaHei\", \"PingFang SC\", \"Noto Sans CJK SC\", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y); }
 
   function selectGame(config) {
     active = new ArcadeGame(config);

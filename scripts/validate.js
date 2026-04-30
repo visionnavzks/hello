@@ -26,10 +26,16 @@ function loadGameData() {
 filesToCheck.forEach(checkSyntax);
 
 const html = read('index.html');
+let previousScriptIndex = -1;
 ['game-data.js', 'game-modes.js', 'app.js'].forEach((script) => {
-  if (!html.includes(`src="${script}"`)) {
+  const scriptIndex = html.indexOf(`src="${script}"`);
+  if (scriptIndex === -1) {
     throw new Error(`index.html is missing ${script}`);
   }
+  if (scriptIndex < previousScriptIndex) {
+    throw new Error(`index.html loads ${script} out of order`);
+  }
+  previousScriptIndex = scriptIndex;
 });
 
 const { games, gradients, categories } = loadGameData();

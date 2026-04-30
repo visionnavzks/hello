@@ -57,8 +57,8 @@ const playerX = Math.floor(width * 0.46);
 const playerY = Math.floor(height * 0.42);
 setBlock(playerX, playerY, blocks.player);
 
-console.log('我的世界：迷你方块冒险 / Mini Block Adventure');
-console.log('='.repeat(width));
+console.log('迷你方块冒险 / Mini Block Adventure');
+console.log('='.repeat(width * 2));
 console.log(world.map((row) => row.join('')).join('\n'));
 console.log('\n背包 / Inventory: 草方块 Grass x8, 木头 Wood x3, 石头 Stone x12');
 console.log('目标 / Goal: 采集资源、搭建小屋、探索湖边。Gather resources, build a hut, and explore the lake.');

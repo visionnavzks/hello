@@ -1,6 +1,6 @@
-# 我的世界：迷你方块冒险
+# 迷你方块冒险 / Mini Block Adventure
 
-A tiny Minecraft-inspired terminal demo that renders a small block world with terrain, water, a tree, a player, and an inventory.
+A tiny voxel sandbox terminal demo that renders a small block world with terrain, water, a tree, a player, and an inventory.
 
 ## Getting Started
 

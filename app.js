@@ -13,6 +13,19 @@ const baseGround = Math.floor(rows * 0.55);
 const dirtDepth = 4;
 const playerWidth = tileSize * 0.72;
 const playerHeight = tileSize * 1.25;
+const waterWaveInsetX = 4;
+const waterWaveY = 7;
+const waterWaveWidthOffset = 8;
+const waterWaveHeight = 3;
+const celestialBodyOffsetX = 110;
+const celestialBodyY = 78;
+const celestialBodyRadius = 34;
+const playerHeadInsetX = 5;
+const playerHeadHeight = 10;
+const playerBodyBottomInset = 16;
+const playerFootInsetX = 3;
+const playerFootHeight = 8;
+const playerFootWidthOffset = 6;
 
 const blockTypes = {
   grass: { label: '草地', color: '#5fbf45', stroke: '#3d7f2f', solid: true },
@@ -144,7 +157,7 @@ function drawBlock(column, row, type) {
 
   if (type === 'water') {
     context.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    context.fillRect(x + 4, y + 7, tileSize - 8, 3);
+    context.fillRect(x + waterWaveInsetX, y + waterWaveY, tileSize - waterWaveWidthOffset, waterWaveHeight);
   }
 }
 
@@ -157,7 +170,7 @@ function drawSky() {
 
   context.fillStyle = isNight ? '#f8fafc' : '#fde68a';
   context.beginPath();
-  context.arc(canvas.width - 110, 78, 34, 0, Math.PI * 2);
+  context.arc(canvas.width - celestialBodyOffsetX, celestialBodyY, celestialBodyRadius, 0, Math.PI * 2);
   context.fill();
 }
 
@@ -166,11 +179,16 @@ function drawPlayer() {
   const y = player.row * tileSize + tileSize - playerHeight;
 
   context.fillStyle = '#f8d7a3';
-  context.fillRect(x + 5, y, playerWidth - 10, 10);
+  context.fillRect(x + playerHeadInsetX, y, playerWidth - playerHeadInsetX * 2, playerHeadHeight);
   context.fillStyle = '#ef4444';
-  context.fillRect(x, y + 10, playerWidth, playerHeight - 16);
+  context.fillRect(x, y + playerHeadHeight, playerWidth, playerHeight - playerBodyBottomInset);
   context.fillStyle = '#1f2937';
-  context.fillRect(x + 3, y + playerHeight - 8, playerWidth - 6, 8);
+  context.fillRect(
+    x + playerFootInsetX,
+    y + playerHeight - playerFootHeight,
+    playerWidth - playerFootWidthOffset,
+    playerFootHeight,
+  );
 }
 
 function render() {

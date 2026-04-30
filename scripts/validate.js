@@ -7,6 +7,7 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const filesToCheck = ['index.js', 'game-data.js', 'game-modes.js', 'app.js'];
+const ALL_CATEGORY = '全部';
 
 function read(file) {
   return fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -61,8 +62,8 @@ if (!Array.isArray(gradients) || gradients.length === 0) {
   throw new Error('Expected at least one game gradient');
 }
 
-if (!categories.includes('全部')) {
-  throw new Error('Categories must include 全部');
+if (!categories.includes(ALL_CATEGORY)) {
+  throw new Error(`Categories must include ${ALL_CATEGORY}`);
 }
 
 if (missingCategories.length > 0) {

@@ -13,6 +13,12 @@ const blocks = {
 
 const width = 24;
 const height = 12;
+const LAKE_Y_RATIO = 0.58;
+const LAKE_START_RATIO = 0.62;
+const TREE_X_RATIO = 0.22;
+const TREE_TOP_RATIO = 0.42;
+const PLAYER_X_RATIO = 0.46;
+const PLAYER_Y_RATIO = 0.42;
 const world = Array.from({ length: height }, () => Array(width).fill(blocks.air));
 
 function setBlock(x, y, block) {
@@ -37,24 +43,24 @@ for (let x = 0; x < width; x += 1) {
   }
 }
 
-const lakeY = Math.floor(height * 0.58);
-const lakeStart = Math.floor(width * 0.62);
+const lakeY = Math.floor(height * LAKE_Y_RATIO);
+const lakeStart = Math.floor(width * LAKE_START_RATIO);
 const lakeEnd = Math.min(width, lakeStart + 5);
 
 for (let x = lakeStart; x < lakeEnd; x += 1) {
   setBlock(x, lakeY, blocks.water);
 }
 
-const treeX = Math.floor(width * 0.22);
-const treeTop = Math.floor(height * 0.42);
+const treeX = Math.floor(width * TREE_X_RATIO);
+const treeTop = Math.floor(height * TREE_TOP_RATIO);
 setBlock(treeX - 1, treeTop, blocks.leaves);
 setBlock(treeX, treeTop, blocks.leaves);
 setBlock(treeX + 1, treeTop, blocks.leaves);
 setBlock(treeX, treeTop + 1, blocks.wood);
 setBlock(treeX, treeTop + 2, blocks.wood);
 
-const playerX = Math.floor(width * 0.46);
-const playerY = Math.floor(height * 0.42);
+const playerX = Math.floor(width * PLAYER_X_RATIO);
+const playerY = Math.floor(height * PLAYER_Y_RATIO);
 setBlock(playerX, playerY, blocks.player);
 
 console.log('迷你方块冒险 / Mini Block Adventure');

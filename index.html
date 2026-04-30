@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>方块世界工坊 / Block World Builder</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="game-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Voxel sandbox demo</p>
+          <h1>方块世界工坊</h1>
+          <p>
+            一个网页版原创方块沙盒：探索、移动、挖掘、放置方块并重建地形。
+          </p>
+        </div>
+        <button id="regenerate" type="button">重新生成世界</button>
+      </section>
+
+      <section class="hud" aria-label="游戏控制面板">
+        <div class="panel">
+          <h2>控制</h2>
+          <p>移动：WASD / 方向键</p>
+          <p>鼠标左键：放置或挖掘</p>
+          <p>空格：切换放置 / 挖掘</p>
+        </div>
+
+        <div class="panel">
+          <h2>模式</h2>
+          <button id="mode-toggle" type="button">当前：放置</button>
+          <button id="time-toggle" type="button">切换昼夜</button>
+        </div>
+
+        <div class="panel inventory" aria-label="方块背包">
+          <h2>背包</h2>
+          <div id="block-picker" class="block-picker"></div>
+        </div>
+      </section>
+
+      <section class="world-card">
+        <canvas id="world" width="960" height="540" aria-label="方块世界画布"></canvas>
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

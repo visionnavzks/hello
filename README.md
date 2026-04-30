@@ -1,8 +1,18 @@
-# 迷你方块冒险 / Mini Block Adventure
+# 方块世界工坊 / Block World Builder
 
-A tiny voxel sandbox terminal demo that renders a small block world with terrain, water, a tree, a player, and an inventory.
+An original browser-based voxel sandbox demo with generated terrain, movement, block placement, mining, a small inventory, and day/night controls.
 
 ## Getting Started
+
+Open the browser game directly:
+
+```bash
+python3 -m http.server 8080
+```
+
+Then visit `http://localhost:8080`.
+
+You can still run the terminal demo:
 
 ```bash
 node index.js
@@ -10,9 +20,12 @@ node index.js
 
 ## Features
 
-- Procedurally shaped block terrain
-- Emoji blocks for grass, dirt, stone, water, wood, leaves, and the player
-- Simple adventure prompt and inventory output
+- Browser canvas voxel sandbox
+- Procedurally shaped terrain with lakes and trees
+- Move with WASD or arrow keys
+- Place or mine blocks with the mouse
+- Switch day/night and regenerate the world
+- Terminal mini-world output via `node index.js`
 
 ## License
 

@@ -272,7 +272,7 @@
       g.tick = 0;
       g.dir = g.next;
       const head = { x: g.snake[0].x + g.dir.x, y: g.snake[0].y + g.dir.y };
-      if (head.x < 0 || head.y < 0 || head.x >= g.cols || head.y >= g.rows || g.snake.some(c => sameCell(c, head))) { g.damage(); return; }
+      if (snakeOutOfBounds(g, head) || g.snake.some(c => sameCell(c, head))) { g.damage(); return; }
       g.snake.unshift(head);
       if (sameCell(head, g.food)) { g.add(1); g.food = randomCell(g); } else g.snake.pop();
     },
@@ -393,6 +393,7 @@
     return false;
   }
   function randomCell(g) { let c; do { c = { x: Math.floor(rnd(0, g.cols)), y: Math.floor(rnd(0, g.rows)) }; } while (g.snake?.some(s => sameCell(s, c))); return c; }
+  function snakeOutOfBounds(g, c) { return c.x < 0 || c.y < 0 || c.x * g.grid + g.grid > W || c.y * g.grid + g.grid > H; }
   function sameCell(a, b) { return a.x === b.x && a.y === b.y; }
   function setSnakeDir(g) {
     const desired = keys.has('ArrowUp') || keys.has('w') ? { x: 0, y: -1 } : keys.has('ArrowDown') || keys.has('s') ? { x: 0, y: 1 } : keys.has('ArrowLeft') || keys.has('a') ? { x: -1, y: 0 } : keys.has('ArrowRight') || keys.has('d') ? { x: 1, y: 0 } : g.next;

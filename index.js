@@ -5,7 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const publicDir = path.join(__dirname, 'public');
-const port = Number(process.env.PORT) || 3000;
+const parsedPort = Number.parseInt(process.env.PORT || '', 10);
+const port = Number.isInteger(parsedPort) && parsedPort > 0 ? parsedPort : 3000;
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',

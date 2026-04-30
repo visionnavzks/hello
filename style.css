@@ -1,0 +1,316 @@
+:root {
+  color-scheme: dark;
+  --glass: rgba(255, 255, 255, 0.18);
+  --glass-strong: rgba(255, 255, 255, 0.28);
+  --text: #f8fbff;
+  --muted: rgba(248, 251, 255, 0.74);
+  --shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.35), transparent 24rem),
+    linear-gradient(135deg, #3657f2 0%, #8b5cf6 42%, #ec4899 100%);
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.desktop {
+  min-height: 100vh;
+  padding: 4.5rem 2rem 7rem;
+}
+
+.menu-bar,
+.dock,
+.hero-window,
+.game-window,
+.detail-window {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: var(--shadow);
+}
+
+.menu-bar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 2.6rem;
+  padding: 0 1.25rem;
+  align-items: center;
+  font-size: 0.92rem;
+}
+
+.menu-left,
+.menu-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  white-space: nowrap;
+}
+
+.apple {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #fff;
+  color: transparent;
+}
+
+.hero-window,
+.game-window,
+.detail-window {
+  border-radius: 1.35rem;
+}
+
+.hero-window {
+  position: relative;
+  max-width: 980px;
+  margin: 0 auto 1.5rem;
+  padding: 3.8rem 2rem 2rem;
+}
+
+.window-controls {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.hero-window > .window-controls {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+}
+
+.window-controls span,
+.window-controls button {
+  display: block;
+  width: 0.78rem;
+  height: 0.78rem;
+  border: 0;
+  border-radius: 50%;
+}
+
+.close { background: #ff5f57; }
+.minimize { background: #ffbd2e; }
+.maximize { background: #28c840; }
+
+.eyebrow,
+.detail-type {
+  color: #dbeafe;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0.75rem;
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  line-height: 1;
+}
+
+.hero-content > p:last-of-type {
+  max-width: 680px;
+  color: var(--muted);
+  font-size: 1.08rem;
+}
+
+.search-panel {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 460px;
+  margin-top: 1.5rem;
+}
+
+.search-panel label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.search-panel input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 0.9rem 1.1rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+}
+
+.search-panel input::placeholder {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.game-window {
+  max-width: 1180px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.window-titlebar {
+  display: grid;
+  grid-template-columns: 5rem 1fr 5rem;
+  align-items: center;
+  min-height: 3.2rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.window-titlebar h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 1.1rem;
+  padding: 1.35rem;
+  max-height: 58vh;
+  overflow: auto;
+}
+
+.game-card {
+  display: grid;
+  gap: 0.55rem;
+  justify-items: center;
+  border: 0;
+  border-radius: 1rem;
+  padding: 0.9rem 0.5rem;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.game-card:hover,
+.game-card:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateY(-4px);
+  outline: none;
+}
+
+.game-icon,
+.detail-icon {
+  display: grid;
+  place-items: center;
+  width: 4.6rem;
+  height: 4.6rem;
+  border-radius: 1.25rem;
+  font-size: 2rem;
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.45), 0 12px 26px rgba(15, 23, 42, 0.28);
+}
+
+.game-card strong {
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.game-card span:last-child {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.detail-window {
+  position: fixed;
+  right: 2rem;
+  bottom: 6.6rem;
+  z-index: 15;
+  width: min(360px, calc(100vw - 2rem));
+  overflow: hidden;
+}
+
+.detail-body {
+  padding: 1.25rem;
+}
+
+.detail-icon {
+  width: 5.4rem;
+  height: 5.4rem;
+  margin-bottom: 1rem;
+  font-size: 2.4rem;
+}
+
+.play-button,
+.dock button {
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  background: var(--glass-strong);
+}
+
+.play-button {
+  width: 100%;
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+}
+
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 18;
+  display: flex;
+  gap: 0.55rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.7rem;
+  border-radius: 1.5rem;
+  overflow-x: auto;
+  transform: translateX(-50%);
+}
+
+.dock button {
+  min-width: 4.8rem;
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.dock button.active {
+  background: rgba(255, 255, 255, 0.42);
+}
+
+@media (max-width: 720px) {
+  .desktop {
+    padding-inline: 1rem;
+  }
+
+  .menu-left span:not(.apple),
+  .menu-left strong,
+  #game-count {
+    display: none;
+  }
+
+  .game-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  }
+
+  .detail-window {
+    right: 1rem;
+    bottom: 6rem;
+  }
+}

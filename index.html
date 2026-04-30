@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>macOS 游戏桌面</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="desktop" aria-label="macOS 风格游戏桌面">
+      <header class="menu-bar">
+        <div class="menu-left">
+          <span class="apple">●</span>
+          <strong>GameOS</strong>
+          <span>文件</span>
+          <span>编辑</span>
+          <span>游戏</span>
+          <span>窗口</span>
+        </div>
+        <div class="menu-right">
+          <span id="game-count">50 款游戏</span>
+          <span id="clock">--:--</span>
+        </div>
+      </header>
+
+      <section class="hero-window" aria-labelledby="hero-title">
+        <div class="window-controls" aria-hidden="true">
+          <span class="close"></span>
+          <span class="minimize"></span>
+          <span class="maximize"></span>
+        </div>
+        <div class="hero-content">
+          <p class="eyebrow">macOS 风格 · 网页桌面</p>
+          <h1 id="hero-title">欢迎来到 GameOS Arcade</h1>
+          <p>在一个类 macOS 的桌面界面中浏览 50 款小游戏。点击任意图标即可打开游戏介绍窗口。</p>
+          <div class="search-panel">
+            <label for="search">搜索游戏</label>
+            <input id="search" type="search" placeholder="输入名称、类型或标签..." autocomplete="off" />
+          </div>
+        </div>
+      </section>
+
+      <section class="game-window" aria-labelledby="library-title">
+        <div class="window-titlebar">
+          <div class="window-controls" aria-hidden="true">
+            <span class="close"></span>
+            <span class="minimize"></span>
+            <span class="maximize"></span>
+          </div>
+          <h2 id="library-title">游戏库</h2>
+        </div>
+        <div id="game-grid" class="game-grid" aria-live="polite"></div>
+      </section>
+
+      <aside id="game-detail" class="detail-window" aria-live="polite" hidden>
+        <div class="window-titlebar">
+          <div class="window-controls" aria-hidden="true">
+            <button class="close" id="close-detail" aria-label="关闭游戏详情"></button>
+            <span class="minimize"></span>
+            <span class="maximize"></span>
+          </div>
+          <h2 id="detail-title">游戏详情</h2>
+        </div>
+        <div class="detail-body">
+          <div id="detail-icon" class="detail-icon"></div>
+          <p id="detail-type" class="detail-type"></p>
+          <p id="detail-description"></p>
+          <button class="play-button">开始游戏</button>
+        </div>
+      </aside>
+
+      <nav class="dock" aria-label="快捷 Dock">
+        <button data-filter="全部">全部</button>
+        <button data-filter="动作">动作</button>
+        <button data-filter="益智">益智</button>
+        <button data-filter="竞速">竞速</button>
+        <button data-filter="冒险">冒险</button>
+        <button data-filter="休闲">休闲</button>
+      </nav>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -39,7 +39,18 @@ let previousScriptIndex = -1;
 });
 
 const { games, gradients, categories } = loadGameData();
-const gameTypes = Array.from(new Set(games.map((game) => game[1])));
+const supportedModes = new Set([
+  'dodge',
+  'adventure',
+  'racer',
+  'puzzle',
+  'defense',
+  'simulation',
+  'rhythm',
+  'creative',
+  'casual',
+]);
+const gameTypes = Array.from(new Set(games.map((game) => game.type)));
 const missingCategories = gameTypes.filter((type) => !categories.includes(type));
 
 if (games.length !== 50) {
@@ -57,5 +68,23 @@ if (!categories.includes('全部')) {
 if (missingCategories.length > 0) {
   throw new Error(`Missing categories: ${missingCategories.join(', ')}`);
 }
+
+games.forEach((game, index) => {
+  const label = game.name || `game #${index + 1}`;
+  if (!game.id || !game.name || !game.type || !game.description || !game.icon) {
+    throw new Error(`${label} is missing required display metadata`);
+  }
+  if (!game.rules) {
+    throw new Error(`${label} is missing playable rules`);
+  }
+  ['mode', 'target', 'hazard', 'objective', 'winScore', 'lives', 'timeLimit', 'speed'].forEach((field) => {
+    if (game.rules[field] === undefined || game.rules[field] === '') {
+      throw new Error(`${label} is missing rules.${field}`);
+    }
+  });
+  if (!supportedModes.has(game.rules.mode)) {
+    throw new Error(`${label} uses unsupported mode ${game.rules.mode}`);
+  }
+});
 
 console.log(`Validated ${games.length} games across ${gameTypes.length} categories.`);

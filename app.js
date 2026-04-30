@@ -36,6 +36,17 @@ const playerBest = document.querySelector('#player-best');
 const playerInstructions = document.querySelector('#player-instructions');
 const gameStage = document.querySelector('#game-stage');
 const gameStatus = document.querySelector('#game-status');
+const modeLabels = {
+  dodge: '动作躲避',
+  adventure: '探索收集',
+  racer: '竞速冲线',
+  puzzle: '益智配对',
+  defense: '策略防守',
+  simulation: '经营模拟',
+  rhythm: '节奏敲击',
+  creative: '创意填色',
+  casual: '休闲挑战',
+};
 let activeFilter = '全部';
 let selectedGame = null;
 let runningGame = null;
@@ -86,9 +97,22 @@ function recordResult(game, score, won) {
 }
 
 function toGameObject(game, index) {
+  if (!Array.isArray(game)) {
+    const [c1, c2] = gradients[index % gradients.length];
+    return { ...game, c1, c2 };
+  }
+
   const [name, type, description, icon] = game;
   const [c1, c2] = gradients[index % gradients.length];
   return { name, type, description, icon, c1, c2 };
+}
+
+function getModeLabel(game) {
+  return modeLabels[game.rules.mode] || '可玩挑战';
+}
+
+function formatObjective(game) {
+  return `玩法：${getModeLabel(game)} · 目标：${game.rules.objective} · 收集：${game.rules.target} · 避开：${game.rules.hazard}`;
 }
 
 function renderCategories() {
@@ -137,7 +161,7 @@ function renderGames() {
     icon.textContent = game.icon;
     title.textContent = game.name;
     type.textContent = game.type;
-    record.textContent = formatResult(getResult(game));
+    record.textContent = `${getModeLabel(game)} · ${formatResult(getResult(game))}`;
     button.append(icon, title, type, record);
     button.addEventListener('click', () => showDetail(game));
     grid.appendChild(button);
@@ -159,7 +183,7 @@ function showDetail(game) {
   detailIcon.style.setProperty('--c1', game.c1);
   detailIcon.style.setProperty('--c2', game.c2);
   detailType.textContent = `${game.type} 游戏`;
-  detailDescription.textContent = `${game.description} 现在可以点击“开始游戏”直接玩。`;
+  detailDescription.textContent = `${game.description} ${formatObjective(game)}。点击“开始游戏”即可操作。`;
   detailRecord.textContent = `成绩：${formatResult(getResult(game))}`;
 }
 

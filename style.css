@@ -382,7 +382,8 @@ h1 {
 .racer-player,
 .racer-obstacle,
 .racer-coin,
-.catcher-basket {
+.catcher-basket,
+.defense-enemy {
   position: absolute;
   display: grid;
   place-items: center;
@@ -399,6 +400,21 @@ h1 {
   font-size: 2rem;
   background: linear-gradient(135deg, #38bdf8, #a855f7);
   box-shadow: 0 16px 28px rgba(15, 23, 42, 0.32);
+}
+
+.hazard-target {
+  filter: drop-shadow(0 0 18px rgba(248, 113, 113, 0.72));
+}
+
+.playable-pop {
+  animation: pop-in 180ms ease;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
 }
 
 .memory-grid {
@@ -434,7 +450,8 @@ h1 {
   gap: 0.75rem;
 }
 
-.arcade-controls button {
+.arcade-controls button,
+.move-pad button {
   width: 3.4rem;
   height: 3.4rem;
   border: 0;
@@ -443,6 +460,24 @@ h1 {
   background: rgba(255, 255, 255, 0.24);
   cursor: pointer;
   font-size: 1.35rem;
+}
+
+.move-pad {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 3.4rem);
+  gap: 0.45rem;
+}
+
+.move-pad button:first-child {
+  grid-column: 2;
+}
+
+.move-pad button:last-child {
+  grid-column: 2;
 }
 
 .racer-lane {
@@ -465,6 +500,119 @@ h1 {
   height: 3.4rem;
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.16);
+}
+
+.defense-enemy {
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 1rem;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+}
+
+.defense-bonus {
+  background: linear-gradient(135deg, #22c55e, #06b6d4);
+}
+
+.adventure-grid,
+.creative-grid {
+  display: grid;
+  gap: 0.55rem;
+  width: min(520px, calc(100% - 1rem));
+  margin: 1rem auto;
+}
+
+.adventure-grid {
+  grid-template-columns: repeat(5, minmax(44px, 1fr));
+}
+
+.creative-grid {
+  grid-template-columns: repeat(4, minmax(56px, 1fr));
+}
+
+.adventure-cell,
+.creative-cell {
+  display: grid;
+  place-items: center;
+  min-height: 4.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 1rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 2rem;
+}
+
+.player-cell,
+.creative-cell.painted {
+  background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+}
+
+.creative-cell {
+  cursor: pointer;
+}
+
+.creative-hazard {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.sim-panel,
+.rhythm-panel {
+  display: grid;
+  gap: 1rem;
+  width: min(640px, calc(100% - 1rem));
+  margin: 1.2rem auto;
+}
+
+.sim-panel {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sim-panel button,
+.rhythm-panel button {
+  border: 0;
+  border-radius: 1rem;
+  padding: 1rem;
+  color: var(--text);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.sim-panel button {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 7rem;
+}
+
+.sim-panel button span,
+.sim-panel p {
+  color: var(--muted);
+}
+
+.sim-panel p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.rhythm-panel {
+  grid-template-columns: repeat(4, minmax(56px, 1fr));
+  align-items: center;
+}
+
+.rhythm-beat {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+  border-radius: 1.4rem;
+  font-size: clamp(3rem, 14vw, 7rem);
+  font-weight: 900;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.48), rgba(139, 92, 246, 0.26));
+}
+
+.rhythm-panel button.active {
+  background: linear-gradient(135deg, #22c55e, #14b8a6);
 }
 
 @media (max-width: 720px) {
@@ -501,5 +649,26 @@ h1 {
 
   .memory-card {
     min-height: 4.4rem;
+  }
+
+  .sim-panel,
+  .rhythm-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sim-panel p,
+  .rhythm-beat {
+    grid-column: 1 / -1;
+  }
+
+  .adventure-cell,
+  .creative-cell {
+    min-height: 3.8rem;
+  }
+
+  .move-pad,
+  .arcade-controls {
+    right: 0.6rem;
+    bottom: 0.6rem;
   }
 }

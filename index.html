@@ -65,6 +65,7 @@
           <div id="detail-icon" class="detail-icon"></div>
           <p id="detail-type" class="detail-type"></p>
           <p id="detail-description"></p>
+          <p id="detail-record" class="detail-record">成绩：暂无成绩</p>
           <button class="play-button" id="play-selected">开始游戏</button>
         </div>
       </aside>
@@ -82,7 +83,9 @@
           <div class="game-hud">
             <span id="player-score">得分 0</span>
             <span id="player-timer">时间 0</span>
+            <span id="player-best">成绩 暂无成绩</span>
             <button id="restart-game" type="button">重开</button>
+            <button id="back-to-library" type="button">返回游戏库</button>
           </div>
           <p id="player-instructions" class="player-instructions"></p>
           <div id="game-stage" class="game-stage" tabindex="0" aria-label="游戏区域"></div>
@@ -90,15 +93,10 @@
         </div>
       </section>
 
-      <nav class="dock" aria-label="快捷 Dock">
-        <button data-filter="全部">全部</button>
-        <button data-filter="动作">动作</button>
-        <button data-filter="益智">益智</button>
-        <button data-filter="竞速">竞速</button>
-        <button data-filter="冒险">冒险</button>
-        <button data-filter="休闲">休闲</button>
-      </nav>
+      <nav id="category-dock" class="dock" aria-label="快捷 Dock"></nav>
     </main>
+    <script src="game-data.js"></script>
+    <script src="game-modes.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

@@ -237,6 +237,13 @@ h1 {
   font-size: 0.76rem;
 }
 
+.game-card small {
+  color: rgba(248, 251, 255, 0.66);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .detail-window {
   position: fixed;
   right: 2rem;
@@ -255,6 +262,13 @@ h1 {
   height: 5.4rem;
   margin-bottom: 1rem;
   font-size: 2.4rem;
+}
+
+.detail-record {
+  border-radius: 0.9rem;
+  padding: 0.7rem 0.8rem;
+  color: #e0f2fe;
+  background: rgba(14, 165, 233, 0.18);
 }
 
 .play-button,
@@ -288,7 +302,7 @@ h1 {
 }
 
 .dock button {
-  min-width: 4.8rem;
+  min-width: 4.2rem;
   border-radius: 1rem;
   padding: 0.85rem 1rem;
 }
@@ -325,6 +339,12 @@ h1 {
   gap: 0.75rem;
   flex-wrap: wrap;
   font-weight: 700;
+}
+
+.game-hud span {
+  border-radius: 999px;
+  padding: 0.42rem 0.7rem;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .game-hud button {

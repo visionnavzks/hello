@@ -1,0 +1,16 @@
+{
+  "name": "hello-arcade",
+  "version": "1.0.0",
+  "description": "A browser arcade cabinet with 50 playable mini-games.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --check index.js && node --check public/arcade.js"
+  },
+  "keywords": [
+    "arcade",
+    "games",
+    "browser"
+  ],
+  "license": "MIT"
+}

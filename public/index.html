@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>50合1网页版街机游戏机</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="cabinet">
+      <section class="marquee">
+        <span>50 合 1 WEB ARCADE</span>
+        <strong>真实可玩 · 无需安装</strong>
+      </section>
+      <section class="screen-wrap">
+        <div class="screen-top">
+          <div>
+            <p class="eyebrow">当前游戏</p>
+            <h1 id="gameTitle">选择一个游戏</h1>
+          </div>
+          <div class="scoreboard">
+            <span>分数 <b id="score">0</b></span>
+            <span>生命 <b id="lives">0</b></span>
+            <span>时间 <b id="time">0</b></span>
+          </div>
+        </div>
+        <canvas id="game" width="800" height="520" aria-label="街机游戏画面"></canvas>
+        <div id="overlay" class="overlay">
+          <h2>50合1网页版街机游戏机</h2>
+          <p>从下方游戏卡带选择任意游戏开始。支持键盘、鼠标和触屏。</p>
+          <button id="quickStart" type="button">随机开局</button>
+        </div>
+      </section>
+      <section class="controls">
+        <div class="stick">↕ ↔</div>
+        <div class="help">
+          <b>操作</b>
+          <span>移动：WASD / 方向键 / 触屏拖动</span>
+          <span>动作：空格 / 鼠标点击 / 触屏点击</span>
+          <span>暂停：P，重开：R</span>
+        </div>
+        <button id="pauseBtn" type="button">暂停</button>
+        <button id="restartBtn" type="button">重开</button>
+      </section>
+      <section>
+        <div class="library-head">
+          <h2>游戏卡带库（50款）</h2>
+          <input id="search" type="search" placeholder="搜索游戏或类型">
+        </div>
+        <div id="games" class="games"></div>
+      </section>
+    </main>
+    <script src="arcade.js"></script>
+  </body>
+</html>

@@ -1,14 +1,29 @@
-# Hello World
+# 50合1网页版街机游戏机
 
-A simple hello world project.
+一个无需依赖的网页街机柜，内置 50 个真实可玩的小游戏。游戏运行在 Canvas 中，支持键盘、鼠标和触屏操作。
 
-## Getting Started
+## 启动
 
 ```bash
 npm install
 npm start
 ```
 
-## License
+打开浏览器访问：<http://localhost:3000>
 
-MIT
+## 测试
+
+```bash
+npm test
+```
+
+## 操作
+
+- 移动：WASD / 方向键 / 触屏拖动
+- 动作：空格 / 鼠标点击 / 触屏点击
+- 暂停：P
+- 重开：R
+
+## 游戏内容
+
+包含 10 类街机玩法，每类 5 个主题变体，共 50 款：躲避、收集、接物、射击、贪吃蛇、乒乓、打砖块、迷宫、记忆翻牌和节奏打击。

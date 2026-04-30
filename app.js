@@ -217,6 +217,10 @@ canvas.addEventListener('click', (event) => {
   const column = Math.floor((event.clientX - rect.left) * scaleX / tileSize);
   const row = Math.floor((event.clientY - rect.top) * scaleY / tileSize);
 
+  if (column < 0 || column >= columns || row < 0 || row >= rows) {
+    return;
+  }
+
   if (column === player.column && row === player.row) {
     return;
   }

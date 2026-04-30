@@ -13,16 +13,27 @@ const types = {
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml; charset=utf-8'
 };
+const badRequest = Symbol('badRequest');
 
 function safeFilePath(urlPath) {
-  const decoded = decodeURIComponent(urlPath.split('?')[0]);
-  const normalized = path.normalize(decoded === '/' ? '/index.html' : decoded);
+  let decoded;
+  try {
+    decoded = decodeURIComponent(urlPath.split('?')[0]);
+  } catch {
+    return badRequest;
+  }
+  const normalized = path.normalize(decoded === '/' ? 'index.html' : decoded.replace(/^\/+/, ''));
   const filePath = path.join(publicDir, normalized);
   return filePath.startsWith(publicDir) ? filePath : null;
 }
 
 const server = http.createServer((req, res) => {
   const filePath = safeFilePath(req.url || '/');
+  if (filePath === badRequest) {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Bad request');
+    return;
+  }
   if (!filePath) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Forbidden');

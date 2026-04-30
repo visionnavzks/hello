@@ -139,6 +139,8 @@
     },
     snake(g) {
       g.grid = 20;
+      g.cols = Math.floor(W / g.grid);
+      g.rows = Math.floor(H / g.grid);
       g.target = 8 + g.config.level * 4;
       g.step = Math.max(0.07, 0.16 - g.config.level * 0.015);
       g.tick = 0;
@@ -270,7 +272,7 @@
       g.tick = 0;
       g.dir = g.next;
       const head = { x: g.snake[0].x + g.dir.x, y: g.snake[0].y + g.dir.y };
-      if (head.x < 0 || head.y < 0 || head.x >= 40 || head.y >= 26 || g.snake.some(c => sameCell(c, head))) { g.damage(); return; }
+      if (head.x < 0 || head.y < 0 || head.x >= g.cols || head.y >= g.rows || g.snake.some(c => sameCell(c, head))) { g.damage(); return; }
       g.snake.unshift(head);
       if (sameCell(head, g.food)) { g.add(1); g.food = randomCell(g); } else g.snake.pop();
     },
@@ -341,8 +343,8 @@
       [...g.bullets, ...g.enemyBullets].forEach(b => drawRect(b, b.vy < 0 ? g.config.palette[2] : '#ff4b4b'));
     },
     snake(g) {
-      g.snake.forEach((c, i) => drawCell(c, i ? g.config.palette[0] : g.config.palette[3]));
-      drawCell(g.food, g.config.palette[2]);
+      g.snake.forEach((c, i) => drawCell(c, i ? g.config.palette[0] : g.config.palette[3], g.grid));
+      drawCell(g.food, g.config.palette[2], g.grid);
     },
     pong(g) { drawPaddle(g.player, g.config.palette[0]); drawPaddle(g.ai, g.config.palette[1]); drawCircle(g.ball.x, g.ball.y, g.ball.r, g.config.palette[2]); centerText(`${g.score} : ${g.enemyScore}`, W / 2, 48, 30, 'rgba(255,255,255,.35)'); },
     brick(g) { drawPaddle(g.player, g.config.palette[0]); drawCircle(g.ball.x, g.ball.y, g.ball.r, g.config.palette[2]); g.bricks.forEach((b, i) => drawRect(b, g.config.palette[i % g.config.palette.length])); },
@@ -390,7 +392,7 @@
     if (!pressed) shotLock = false;
     return false;
   }
-  function randomCell(g) { let c; do { c = { x: Math.floor(rnd(0, 40)), y: Math.floor(rnd(0, 26)) }; } while (g.snake?.some(s => sameCell(s, c))); return c; }
+  function randomCell(g) { let c; do { c = { x: Math.floor(rnd(0, g.cols)), y: Math.floor(rnd(0, g.rows)) }; } while (g.snake?.some(s => sameCell(s, c))); return c; }
   function sameCell(a, b) { return a.x === b.x && a.y === b.y; }
   function setSnakeDir(g) {
     const desired = keys.has('ArrowUp') || keys.has('w') ? { x: 0, y: -1 } : keys.has('ArrowDown') || keys.has('s') ? { x: 0, y: 1 } : keys.has('ArrowLeft') || keys.has('a') ? { x: -1, y: 0 } : keys.has('ArrowRight') || keys.has('d') ? { x: 1, y: 0 } : g.next;
@@ -436,7 +438,7 @@
   function drawDiamond(x, y, r, color) { ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.fill(); }
   function drawPlayer(p, color, ship) { drawRect(p, color); if (ship) drawCircle(p.x + p.w / 2, p.y - 5, 7, '#fff'); }
   function drawPaddle(p, color) { drawRect(p, color); }
-  function drawCell(c, color) { drawRect({ x: c.x * 20 + 1, y: c.y * 20 + 1, w: 18, h: 18 }, color); }
+  function drawCell(c, color, size) { drawRect({ x: c.x * size + 1, y: c.y * size + 1, w: size - 2, h: size - 2 }, color); }
   function centerText(text, x, y, size, color) { ctx.fillStyle = color; ctx.font = `900 ${size}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y); }
 
   function selectGame(config) {

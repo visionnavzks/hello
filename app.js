@@ -86,13 +86,17 @@ function addTree(targetWorld, column) {
 }
 
 function setBlock(targetWorld, column, row, block) {
-  if (column >= 0 && column < columns && row >= 0 && row < rows) {
+  if (isValidPosition(column, row)) {
     targetWorld[row][column] = block;
   }
 }
 
+function isValidPosition(column, row) {
+  return column >= 0 && column < columns && row >= 0 && row < rows;
+}
+
 function isSolid(column, row) {
-  if (column < 0 || column >= columns || row < 0 || row >= rows) {
+  if (!isValidPosition(column, row)) {
     return true;
   }
 
@@ -217,7 +221,7 @@ canvas.addEventListener('click', (event) => {
   const column = Math.floor((event.clientX - rect.left) * scaleX / tileSize);
   const row = Math.floor((event.clientY - rect.top) * scaleY / tileSize);
 
-  if (column < 0 || column >= columns || row < 0 || row >= rows) {
+  if (!isValidPosition(column, row)) {
     return;
   }
 

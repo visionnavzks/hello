@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Realistic Pelican Riding a Bicycle</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(to bottom, #74b9ff, #dfe6e9);
+    margin: 0;
+    overflow: hidden;
+  }
+  .scene {
+    position: relative;
+    width: 800px;
+    height: 600px;
+  }
+  svg {
+    width: 100%;
+    height: 100%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    background-color: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  /* Animations */
+  @keyframes move-clouds {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+  .clouds {
+    animation: move-clouds 20s linear infinite;
+  }
+
+  @keyframes rotate-wheel {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .wheel {
+    transform-origin: center;
+    animation: rotate-wheel 1.5s linear infinite;
+  }
+  .wheel-back { transform-origin: 220px 450px; }
+  .wheel-front { transform-origin: 620px 450px; }
+
+  .crank-group {
+    transform-origin: 420px 450px;
+    animation: rotate-wheel 1.5s linear infinite;
+  }
+
+  @keyframes ground-move {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-40px); } /* matches dasharray */
+  }
+  .ground {
+    stroke-dasharray: 40 40;
+    animation: ground-move 0.3s linear infinite;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-3px); }
+  }
+  .pelican-body {
+    animation: bob 0.75s ease-in-out infinite;
+  }
+
+  @keyframes pouch-jiggle {
+    0%, 100% { d: path("M 465 75 C 520 150, 600 140, 655 93 C 600 100, 520 85, 465 75 Z"); }
+    50% { d: path("M 465 75 C 520 160, 600 150, 655 93 C 600 100, 520 85, 465 75 Z"); }
+  }
+  .pouch {
+    animation: pouch-jiggle 1s ease-in-out infinite;
+  }
+
+  @keyframes wing-flap {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(5deg); }
+  }
+  .wing {
+    transform-origin: 320px 240px;
+    animation: wing-flap 0.75s ease-in-out infinite;
+  }
+
+  .pedal-level {
+    /* To keep pedal horizontal, we need to counter-rotate it based on JS */
+  }
+</style>
+</head>
+<body>
+<div class="scene">
+  <svg id="bike-svg" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Gradients -->
+      <radialGradient id="wheelGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="80%" stop-color="#2d3436"/>
+        <stop offset="90%" stop-color="#636e72"/>
+        <stop offset="100%" stop-color="#2d3436"/>
+      </radialGradient>
+      <linearGradient id="frameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#d63031"/>
+        <stop offset="100%" stop-color="#e17055"/>
+      </linearGradient>
+      <linearGradient id="featherGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="80%" stop-color="#f5f6fa"/>
+        <stop offset="100%" stop-color="#dcdde1"/>
+      </linearGradient>
+      <linearGradient id="wingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="100%" stop-color="#718093"/>
+      </linearGradient>
+      <linearGradient id="beakGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#fbc531"/>
+        <stop offset="100%" stop-color="#e1b12c"/>
+      </linearGradient>
+
+      <g id="cloud">
+        <path d="M 50 50 Q 60 30 80 30 Q 100 30 110 50 Q 130 50 130 70 Q 130 90 100 90 L 40 90 Q 20 90 20 70 Q 20 50 50 50 Z" fill="#fff" opacity="0.8"/>
+      </g>
+    </defs>
+
+    <!-- Sky Background -->
+    <rect width="100%" height="100%" fill="#81ecec" opacity="0.3"/>
+
+    <!-- Clouds -->
+    <g class="clouds">
+      <use href="#cloud" x="100" y="50" transform="scale(1.5)" />
+      <use href="#cloud" x="400" y="20" transform="scale(1)" />
+      <use href="#cloud" x="700" y="80" transform="scale(1.2)" />
+      <use href="#cloud" x="1000" y="40" transform="scale(1.8)" />
+      <use href="#cloud" x="1300" y="70" transform="scale(1)" />
+    </g>
+
+    <g class="clouds" transform="translate(800, 0)">
+      <use href="#cloud" x="100" y="50" transform="scale(1.5)" />
+      <use href="#cloud" x="400" y="20" transform="scale(1)" />
+      <use href="#cloud" x="700" y="80" transform="scale(1.2)" />
+      <use href="#cloud" x="1000" y="40" transform="scale(1.8)" />
+      <use href="#cloud" x="1300" y="70" transform="scale(1)" />
+    </g>
+
+    <!-- Ground -->
+    <line x1="0" y1="520" x2="1600" y2="520" stroke="#b2bec3" stroke-width="4" />
+    <line x1="0" y1="535" x2="1600" y2="535" stroke="#dfe6e9" stroke-width="8" />
+    <line x1="-100" y1="520" x2="900" y2="520" stroke="#636e72" stroke-width="4" class="ground" />
+
+    <!-- Bicycle Back Wheel -->
+    <g class="wheel wheel-back">
+      <circle cx="220" cy="450" r="70" fill="transparent" stroke="url(#wheelGrad)" stroke-width="12"/>
+      <circle cx="220" cy="450" r="62" fill="transparent" stroke="#bdc3c7" stroke-width="2"/>
+      <g stroke="#b2bec3" stroke-width="1.5">
+        <!-- Spokes -->
+        <line x1="220" y1="388" x2="220" y2="512" />
+        <line x1="158" y1="450" x2="282" y2="450" />
+        <line x1="176" y1="406" x2="264" y2="494" />
+        <line x1="264" y1="406" x2="176" y2="494" />
+        <line x1="190" y1="392" x2="250" y2="508" />
+        <line x1="250" y1="392" x2="190" y2="508" />
+        <line x1="162" y1="420" x2="278" y2="480" />
+        <line x1="278" y1="420" x2="162" y2="480" />
+        <!-- More spokes -->
+        <line x1="200" y1="390" x2="240" y2="510" />
+        <line x1="240" y1="390" x2="200" y2="510" />
+        <line x1="165" y1="430" x2="275" y2="470" />
+        <line x1="275" y1="430" x2="165" y2="470" />
+      </g>
+      <circle cx="220" cy="450" r="8" fill="#2d3436"/>
+    </g>
+
+    <!-- Bicycle Front Wheel -->
+    <g class="wheel wheel-front">
+      <circle cx="620" cy="450" r="70" fill="transparent" stroke="url(#wheelGrad)" stroke-width="12"/>
+      <circle cx="620" cy="450" r="62" fill="transparent" stroke="#bdc3c7" stroke-width="2"/>
+      <g stroke="#b2bec3" stroke-width="1.5">
+        <line x1="620" y1="388" x2="620" y2="512" />
+        <line x1="558" y1="450" x2="682" y2="450" />
+        <line x1="576" y1="406" x2="664" y2="494" />
+        <line x1="664" y1="406" x2="576" y2="494" />
+        <line x1="590" y1="392" x2="650" y2="508" />
+        <line x1="650" y1="392" x2="590" y2="508" />
+        <line x1="562" y1="420" x2="678" y2="480" />
+        <line x1="678" y1="420" x2="562" y2="480" />
+        <line x1="600" y1="390" x2="640" y2="510" />
+        <line x1="640" y1="390" x2="600" y2="510" />
+        <line x1="565" y1="430" x2="675" y2="470" />
+        <line x1="675" y1="430" x2="565" y2="470" />
+      </g>
+      <circle cx="620" cy="450" r="8" fill="#2d3436"/>
+    </g>
+
+    <!-- Left Leg (Background) -->
+    <path id="left-leg" fill="none" stroke="#d35400" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Left Pedal -->
+    <g id="left-pedal-group">
+      <rect x="-15" y="-5" width="30" height="10" rx="3" fill="#636e72"/>
+      <path id="left-foot" d="M -15 -5 L 15 -5 L 25 -15 L -20 -15 Z" fill="#e67e22"/>
+    </g>
+
+    <!-- Bicycle Frame -->
+    <g stroke="url(#frameGrad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="220" y1="450" x2="330" y2="280" /> <!-- Seat stay -->
+      <line x1="220" y1="450" x2="420" y2="450" /> <!-- Chain stay bottom -->
+      <line x1="420" y1="450" x2="330" y2="280" /> <!-- Seat tube -->
+      <line x1="330" y1="280" x2="550" y2="280" /> <!-- Top tube -->
+      <line x1="420" y1="450" x2="550" y2="280" /> <!-- Down tube -->
+      <line x1="620" y1="450" x2="520" y2="200" /> <!-- Fork -->
+    </g>
+
+    <!-- Chain -->
+    <path d="M 220 450 L 420 450" stroke="#636e72" stroke-width="4" stroke-dasharray="2 2"/>
+    <path d="M 220 436 L 420 436" stroke="#636e72" stroke-width="4" stroke-dasharray="2 2"/>
+
+    <!-- Handlebars -->
+    <path d="M 520 200 Q 560 160 590 190" fill="none" stroke="#bdc3c7" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 520 200 L 530 180" fill="none" stroke="#bdc3c7" stroke-width="8" stroke-linecap="round"/>
+    <!-- Grips -->
+    <circle cx="590" cy="190" r="6" fill="#2d3436"/>
+
+    <!-- Seat -->
+    <line x1="330" y1="280" x2="320" y2="250" stroke="#bdc3c7" stroke-width="8"/>
+    <path d="M 280 250 Q 320 230 360 250" fill="#2d3436" stroke="#2d3436" stroke-width="18" stroke-linecap="round"/>
+
+    <!-- Crank Group (Rotating) -->
+    <g id="crank-center" transform="translate(420, 450)">
+      <!-- Crank wheel -->
+      <circle cx="0" cy="0" r="22" fill="transparent" stroke="#bdc3c7" stroke-width="4"/>
+      <circle cx="0" cy="0" r="16" fill="transparent" stroke="#7f8c8d" stroke-width="2" stroke-dasharray="4 4"/>
+
+      <!-- Right Crank Arm -->
+      <line id="right-crank-arm" x1="0" y1="0" x2="40" y2="0" stroke="#7f8c8d" stroke-width="8" stroke-linecap="round"/>
+    </g>
+
+    <!-- Center pin -->
+    <circle cx="420" cy="450" r="6" fill="#2d3436"/>
+
+    <!-- Pelican -->
+    <g class="pelican-body">
+      <!-- Tail feathers -->
+      <path d="M 240 310 Q 160 300 150 260 Q 190 270 230 280 Z" fill="url(#featherGrad)" stroke="#bdc3c7" stroke-width="1"/>
+      <path d="M 240 310 Q 170 330 140 310 Q 180 300 230 300 Z" fill="url(#featherGrad)" stroke="#bdc3c7" stroke-width="1"/>
+
+      <!-- Body Main -->
+      <ellipse cx="320" cy="230" rx="95" ry="75" fill="url(#featherGrad)" transform="rotate(-25 320 230)"/>
+      <path d="M 250 180 Q 330 110 380 180 Q 390 280 280 280 Z" fill="url(#featherGrad)"/>
+
+      <!-- Wing -->
+      <g class="wing">
+        <path d="M 260 210 C 230 250, 260 310, 360 260 C 330 210, 280 190, 260 210 Z" fill="url(#wingGrad)" stroke="#bdc3c7" stroke-width="2"/>
+        <path d="M 260 220 C 240 250, 260 290, 340 250" fill="none" stroke="#bdc3c7" stroke-width="2"/>
+        <path d="M 270 240 C 260 260, 280 280, 320 250" fill="none" stroke="#bdc3c7" stroke-width="2"/>
+      </g>
+
+      <!-- Neck -->
+      <!-- A pelican's neck is long and curved -->
+      <path d="M 370 170 C 390 100, 380 60, 420 50 C 440 45, 450 70, 430 110 C 420 130, 410 160, 395 190 Z" fill="url(#featherGrad)"/>
+
+      <!-- Head -->
+      <path d="M 410 50 C 430 30, 460 30, 465 55 C 470 80, 440 90, 420 80 Z" fill="url(#featherGrad)"/>
+
+      <!-- Eye -->
+      <circle cx="445" cy="55" r="5" fill="#fbc531"/>
+      <circle cx="445" cy="55" r="2" fill="#2d3436"/>
+      <circle cx="446" cy="54" r="1" fill="#fff"/>
+
+      <!-- Beak Top -->
+      <path d="M 460 55 C 550 50, 640 80, 660 90 C 600 100, 520 85, 465 75 Z" fill="url(#beakGrad)"/>
+      <path d="M 660 90 C 665 92, 655 95, 640 95 Z" fill="#e1b12c"/> <!-- Hook -->
+
+      <!-- Beak Bottom (Pouch) -->
+      <path class="pouch" fill="#f39c12" opacity="0.85" stroke="#e67e22" stroke-width="1.5"/>
+      <path d="M 465 75 C 520 85, 600 100, 655 93" fill="none" stroke="#d35400" stroke-width="1" opacity="0.5"/>
+    </g>
+
+    <!-- Right Leg (Foreground) -->
+    <path id="right-leg" fill="none" stroke="#e67e22" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Right Pedal -->
+    <g id="right-pedal-group">
+      <rect x="-15" y="-5" width="30" height="10" rx="3" fill="#2d3436"/>
+      <path id="right-foot" d="M -15 -5 L 15 -5 L 25 -15 L -20 -15 Z" fill="#d35400"/>
+    </g>
+  </svg>
+</div>
+
+<script>
+  // Center of the crank
+  const crankX = 420;
+  const crankY = 450;
+  const crankRadius = 40;
+
+  // Hip joint (estimated relative to the body animation, but keeping it fixed for simplicity makes IK stable)
+  // The pelican body bobs, but let's just make the hip fixed or slight bob.
+  const hipX = 330;
+  const hipY = 270;
+
+  // Leg segments
+  const L1 = 100; // Thigh
+  const L2 = 110; // Calf
+
+  const rightLegPath = document.getElementById('right-leg');
+  const leftLegPath = document.getElementById('left-leg');
+  const rightPedalGroup = document.getElementById('right-pedal-group');
+  const leftPedalGroup = document.getElementById('left-pedal-group');
+  const rightCrankArm = document.getElementById('right-crank-arm');
+
+  let startTime = null;
+
+  function calculateIK(hip, target, reverse = false) {
+    const dx = target.x - hip.x;
+    const dy = target.y - hip.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+
+    // Law of cosines to find angle of thigh
+    // c^2 = a^2 + b^2 - 2ab cos(C)
+    let a = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
+    a = Math.max(-1, Math.min(1, a)); // clamp
+
+    const angleToTarget = Math.atan2(dy, dx);
+    const angleOffset = Math.acos(a);
+
+    // Knee joint direction depends on 'reverse' flag
+    const angle1 = angleToTarget - (reverse ? -1 : 1) * angleOffset;
+
+    const knee = {
+      x: hip.x + L1 * Math.cos(angle1),
+      y: hip.y + L1 * Math.sin(angle1)
+    };
+    return knee;
+  }
+
+  function animate(time) {
+    if (!startTime) startTime = time;
+    const elapsed = time - startTime;
+
+    // 1.5s per revolution to match CSS animation
+    const duration = 1500;
+    const progress = (elapsed % duration) / duration;
+
+    // Angle in radians. CSS rotate goes clockwise, starting at 0deg pointing right.
+    const angleRight = progress * 2 * Math.PI;
+    const angleLeft = angleRight + Math.PI;
+
+    // Calculate pedal positions
+    const rightPedal = {
+      x: crankX + crankRadius * Math.cos(angleRight),
+      y: crankY + crankRadius * Math.sin(angleRight)
+    };
+
+    const leftPedal = {
+      x: crankX + crankRadius * Math.cos(angleLeft),
+      y: crankY + crankRadius * Math.sin(angleLeft)
+    };
+
+    // Calculate knee positions using IK
+    // Right leg (foreground): bends "forward" or "backward"? A bird's knee bends forward, ankle backwards.
+    // Actually, birds have a hidden knee inside the body, and the visible "knee" is the ankle, bending backwards!
+    // So if hip is at top, "knee" (ankle) goes back. Let's set reverse = true to make the joint bend backwards.
+    const rightKnee = calculateIK({x: hipX, y: hipY}, rightPedal, true);
+    const leftKnee = calculateIK({x: hipX, y: hipY}, leftPedal, true);
+
+    // Update paths
+    rightLegPath.setAttribute('d', `M ${hipX} ${hipY} L ${rightKnee.x} ${rightKnee.y} L ${rightPedal.x} ${rightPedal.y}`);
+    leftLegPath.setAttribute('d', `M ${hipX} ${hipY} L ${leftKnee.x} ${leftKnee.y} L ${leftPedal.x} ${leftPedal.y}`);
+
+    // Update pedal groups
+    rightPedalGroup.setAttribute('transform', `translate(${rightPedal.x}, ${rightPedal.y})`);
+    leftPedalGroup.setAttribute('transform', `translate(${leftPedal.x}, ${leftPedal.y})`);
+
+    // Update right crank arm (so it connects center to right pedal explicitly)
+    rightCrankArm.setAttribute('x2', crankRadius * Math.cos(angleRight));
+    rightCrankArm.setAttribute('y2', crankRadius * Math.sin(angleRight));
+
+    requestAnimationFrame(animate);
+  }
+
+  requestAnimationFrame(animate);
+</script>
+</body>
+</html>

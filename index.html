@@ -1,142 +1,305 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>骑自行车的鳄鱼</title>
+    <title>骑自行车的可爱鳄鱼</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%);
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 70%, #228B22 100%);
             margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            position: relative;
         }
         svg {
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3));
+        }
+        .sun {
+            animation: pulse 3s ease-in-out infinite;
+        }
+        .wheel-front, .wheel-back {
+            animation: spin 2s linear infinite;
+            transform-origin: center;
+        }
+        .croc-eyes {
+            animation: blink 4s ease-in-out infinite;
+        }
+        .legs {
+            animation: pedaling 0.8s ease-in-out infinite;
+        }
+        .cloud {
+            animation: float 8s ease-in-out infinite;
+        }
+        .cloud:nth-child(2) {
+            animation-delay: -3s;
+        }
+        .cloud:nth-child(3) {
+            animation-delay: -5s;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        @keyframes blink {
+            0%, 45%, 55%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.1); }
+        }
+        @keyframes pedaling {
+            0%, 100% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(20px); }
         }
     </style>
 </head>
 <body>
-    <svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="crocGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#2d5016"/>
-                <stop offset="50%" stop-color="#3d7026"/>
-                <stop offset="100%" stop-color="#2d5016"/>
-            </linearGradient>
-            <linearGradient id="wheelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#333"/>
-                <stop offset="50%" stop-color="#1a1a1a"/>
-                <stop offset="100%" stop-color="#333"/>
-            </linearGradient>
-            <linearGradient id="bikeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#8b4513"/>
-                <stop offset="100%" stop-color="#5d2e0c"/>
-            </linearGradient>
-        </defs>
+    <div class="container">
+        <svg width="600" height="450" viewBox="0 0 600 450" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#87CEEB"/>
+                    <stop offset="100%" stop-color="#98FB98"/>
+                </linearGradient>
+                <linearGradient id="crocBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#2ECC71"/>
+                    <stop offset="50%" stop-color="#27AE60"/>
+                    <stop offset="100%" stop-color="#1E8449"/>
+                </linearGradient>
+                <linearGradient id="crocBelly" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ABEBC6"/>
+                    <stop offset="100%" stop-color="#82E0AA"/>
+                </linearGradient>
+                <linearGradient id="wheelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#5D6D7E"/>
+                    <stop offset="50%" stop-color="#2C3E50"/>
+                    <stop offset="100%" stop-color="#5D6D7E"/>
+                </linearGradient>
+                <linearGradient id="frameGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#E74C3C"/>
+                    <stop offset="50%" stop-color="#C0392B"/>
+                    <stop offset="100%" stop-color="#E74C3C"/>
+                </linearGradient>
+                <radialGradient id="sunGradient" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#F7DC6F"/>
+                    <stop offset="70%" stop-color="#F4D03F"/>
+                    <stop offset="100%" stop-color="#F1C40F"/>
+                </radialGradient>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
 
-        <rect x="0" y="220" width="400" height="80" fill="#8B4513" rx="5"/>
-        <ellipse cx="60" cy="230" rx="50" ry="10" fill="#654321" opacity="0.3"/>
-        <ellipse cx="200" cy="235" rx="80" ry="8" fill="#654321" opacity="0.2"/>
-        <ellipse cx="340" cy="230" rx="50" ry="10" fill="#654321" opacity="0.3"/>
+            <rect x="0" y="0" width="600" height="350" fill="url(#skyGradient)"/>
+            <rect x="0" y="350" width="600" height="100" fill="#228B22"/>
 
-        <g class="bicycle">
-            <circle cx="100" cy="200" r="40" fill="white" stroke="#333" stroke-width="3"/>
-            <circle cx="100" cy="200" r="35" fill="url(#wheelGradient)"/>
-            <circle cx="100" cy="200" r="20" fill="white" stroke="#333" stroke-width="2"/>
-            <circle cx="100" cy="200" r="8" fill="#333"/>
-            <g transform="translate(100,200)">
-                <line x1="0" y1="-15" x2="0" y2="15" stroke="#666" stroke-width="1"/>
-                <line x1="-15" y1="0" x2="15" y2="0" stroke="#666" stroke-width="1"/>
-                <line x1="-10" y1="-10" x2="10" y2="10" stroke="#666" stroke-width="1"/>
-                <line x1="-10" y1="10" x2="10" y2="-10" stroke="#666" stroke-width="1"/>
+            <g class="sun" transform="translate(520, 60)">
+                <circle r="35" fill="url(#sunGradient)" filter="url(#glow)"/>
+                <g stroke="#F4D03F" stroke-width="3" stroke-linecap="round">
+                    <line x1="0" y1="-45" x2="0" y2="-55"/>
+                    <line x1="32" y1="-32" x2="39" y2="-39"/>
+                    <line x1="45" y1="0" x2="55" y2="0"/>
+                    <line x1="32" y1="32" x2="39" y2="39"/>
+                    <line x1="-32" y1="-32" x2="-39" y2="-39"/>
+                    <line x1="-45" y1="0" x2="-55" y2="0"/>
+                </g>
             </g>
 
-            <circle cx="300" cy="200" r="40" fill="white" stroke="#333" stroke-width="3"/>
-            <circle cx="300" cy="200" r="35" fill="url(#wheelGradient)"/>
-            <circle cx="300" cy="200" r="20" fill="white" stroke="#333" stroke-width="2"/>
-            <circle cx="300" cy="200" r="8" fill="#333"/>
-            <g transform="translate(300,200)">
-                <line x1="0" y1="-15" x2="0" y2="15" stroke="#666" stroke-width="1"/>
-                <line x1="-15" y1="0" x2="15" y2="0" stroke="#666" stroke-width="1"/>
-                <line x1="-10" y1="-10" x2="10" y2="10" stroke="#666" stroke-width="1"/>
-                <line x1="-10" y1="10" x2="10" y2="-10" stroke="#666" stroke-width="1"/>
+            <g class="cloud" transform="translate(50, 80)">
+                <ellipse cx="0" cy="0" rx="40" ry="25" fill="white" opacity="0.9"/>
+                <ellipse cx="30" cy="5" rx="30" ry="20" fill="white" opacity="0.9"/>
+                <ellipse cx="-25" cy="8" rx="25" ry="18" fill="white" opacity="0.9"/>
+            </g>
+            <g class="cloud" transform="translate(200, 120)">
+                <ellipse cx="0" cy="0" rx="35" ry="22" fill="white" opacity="0.8"/>
+                <ellipse cx="25" cy="3" rx="28" ry="18" fill="white" opacity="0.8"/>
+                <ellipse cx="-20" cy="6" rx="22" ry="15" fill="white" opacity="0.8"/>
+            </g>
+            <g class="cloud" transform="translate(380, 90)">
+                <ellipse cx="0" cy="0" rx="32" ry="20" fill="white" opacity="0.85"/>
+                <ellipse cx="22" cy="4" rx="25" ry="16" fill="white" opacity="0.85"/>
+                <ellipse cx="-18" cy="5" rx="20" ry="14" fill="white" opacity="0.85"/>
             </g>
 
-            <line x1="100" y1="200" x2="200" y2="160" stroke="#8B4513" stroke-width="4" stroke-linecap="round"/>
-            <line x1="200" y1="160" x2="300" y2="200" stroke="#8B4513" stroke-width="4" stroke-linecap="round"/>
-            <line x1="100" y1="200" x2="300" y2="200" stroke="#8B4513" stroke-width="3"/>
+            <g class="bicycle" transform="translate(150, 180)">
+                <g class="wheel-back" style="transform-origin: 0px 120px;">
+                    <circle cx="0" cy="120" r="50" fill="white" stroke="#333" stroke-width="4"/>
+                    <circle cx="0" cy="120" r="45" fill="url(#wheelGradient)"/>
+                    <circle cx="0" cy="120" r="30" fill="white" stroke="#333" stroke-width="2"/>
+                    <circle cx="0" cy="120" r="12" fill="#333"/>
+                    <circle cx="0" cy="120" r="5" fill="#666"/>
+                    <g stroke="#555" stroke-width="2">
+                        <line x1="0" y1="90" x2="0" y2="150"/>
+                        <line x1="30" y1="105" x2="-30" y2="135"/>
+                        <line x1="30" y1="135" x2="-30" y2="105"/>
+                        <line x1="21" y1="120" x2="-21" y2="120"/>
+                    </g>
+                </g>
 
-            <rect x="180" y="120" width="40" height="8" rx="4" fill="#8B4513"/>
-            <circle cx="180" cy="124" r="8" fill="#333"/>
-            <circle cx="220" cy="124" r="8" fill="#333"/>
+                <g class="wheel-front" style="transform-origin: 200px 120px;">
+                    <circle cx="200" cy="120" r="50" fill="white" stroke="#333" stroke-width="4"/>
+                    <circle cx="200" cy="120" r="45" fill="url(#wheelGradient)"/>
+                    <circle cx="200" cy="120" r="30" fill="white" stroke="#333" stroke-width="2"/>
+                    <circle cx="200" cy="120" r="12" fill="#333"/>
+                    <circle cx="200" cy="120" r="5" fill="#666"/>
+                    <g stroke="#555" stroke-width="2">
+                        <line x1="200" y1="90" x2="200" y2="150"/>
+                        <line x1="230" y1="105" x2="170" y2="135"/>
+                        <line x1="230" y1="135" x2="170" y2="105"/>
+                        <line x1="179" y1="120" x2="221" y2="120"/>
+                    </g>
+                </g>
 
-            <ellipse cx="200" cy="175" rx="55" ry="25" fill="url(#bikeGradient)" stroke="#5d2e0c" stroke-width="2"/>
+                <line x1="0" y1="120" x2="100" y2="60" stroke="url(#frameGradient)" stroke-width="8" stroke-linecap="round"/>
+                <line x1="100" y1="60" x2="200" y2="120" stroke="url(#frameGradient)" stroke-width="8" stroke-linecap="round"/>
+                <line x1="0" y1="120" x2="200" y2="120" stroke="url(#frameGradient)" stroke-width="6" stroke-linecap="round"/>
 
-            <line x1="190" y1="140" x2="150" y2="180" stroke="#8B4513" stroke-width="3"/>
-            <line x1="210" y1="140" x2="250" y2="180" stroke="#8B4513" stroke-width="3"/>
+                <line x1="100" y1="60" x2="80" y2="30" stroke="url(#frameGradient)" stroke-width="8" stroke-linecap="round"/>
+                <line x1="60" y1="60" x2="120" y2="60" stroke="url(#frameGradient)" stroke-width="6" stroke-linecap="round"/>
 
-            <ellipse cx="200" cy="160" rx="35" ry="15" fill="#333"/>
-            <ellipse cx="200" cy="160" rx="25" ry="10" fill="#444"/>
-            <circle cx="200" cy="160" r="5" fill="#555"/>
+                <path d="M50 60 Q70 40 110 45" fill="none" stroke="#E74C3C" stroke-width="4" stroke-linecap="round"/>
 
-            <ellipse cx="220" cy="155" rx="8" ry="5" fill="#333"/>
-            <circle cx="220" cy="155" r="3" fill="#555"/>
-        </g>
+                <rect x="55" y="35" width="60" height="12" rx="6" fill="#333"/>
+                <circle cx="60" cy="41" r="8" fill="#2C3E50"/>
+                <circle cx="110" cy="41" r="8" fill="#2C3E50"/>
 
-        <g class="crocodile">
-            <ellipse cx="320" cy="130" rx="35" ry="25" fill="url(#crocGradient)"/>
-            <ellipse cx="355" cy="135" rx="25" ry="20" fill="url(#crocGradient)"/>
+                <rect x="70" y="50" width="50" height="15" rx="5" fill="#8B4513"/>
 
-            <ellipse cx="310" cy="125" rx="8" ry="6" fill="white"/>
-            <circle cx="312" cy="125" r="4" fill="#1a1a1a"/>
-            <circle cx="314" cy="123" r="1.5" fill="white"/>
-
-            <ellipse cx="330" cy="125" rx="8" ry="6" fill="white"/>
-            <circle cx="332" cy="125" r="4" fill="#1a1a1a"/>
-            <circle cx="334" cy="123" r="1.5" fill="white"/>
-
-            <path d="M340 140 Q350 150 355 145 Q360 140 355 135 Q350 130 340 140" fill="#1a1a1a"/>
-
-            <rect x="350" y="130" width="30" height="6" rx="3" fill="#8B4513"/>
-            <rect x="370" y="128" width="8" height="10" rx="2" fill="#ff6b6b"/>
-
-            <ellipse cx="280" cy="140" rx="45" ry="30" fill="url(#crocGradient)"/>
-            <ellipse cx="230" cy="150" rx="40" ry="25" fill="url(#crocGradient)"/>
-            <ellipse cx="190" cy="160" rx="35" ry="20" fill="url(#crocGradient)"/>
-
-            <path d="M280 130 Q270 120 260 125 Q250 130 255 140" stroke="#2d5016" stroke-width="2" fill="none"/>
-            <path d="M265 135 Q255 125 245 130" stroke="#2d5016" stroke-width="2" fill="none"/>
-            <path d="M250 140 Q240 130 230 135" stroke="#2d5016" stroke-width="2" fill="none"/>
-
-            <path d="M190 150 Q180 145 175 150 Q170 155 175 160 Q180 165 190 160" stroke="#2d5016" stroke-width="2" fill="none"/>
-            <path d="M175 155 Q165 150 160 155 Q155 160 160 165 Q165 170 175 165" stroke="#2d5016" stroke-width="2" fill="none"/>
-
-            <ellipse cx="260" cy="165" rx="25" ry="15" fill="#3d7026" opacity="0.5"/>
-
-            <g transform="translate(280, 155)">
-                <ellipse cx="0" cy="0" rx="40" ry="20" fill="url(#crocGradient)"/>
-                <rect x="-35" y="-10" width="70" height="20" rx="5" fill="#8B4513"/>
+                <circle cx="100" cy="60" r="18" fill="#2C3E50"/>
+                <circle cx="100" cy="60" r="10" fill="#34495E"/>
+                <circle cx="100" cy="60" r="4" fill="#F39C12"/>
             </g>
 
-            <ellipse cx="210" cy="130" rx="18" ry="22" fill="url(#crocGradient)"/>
-            <ellipse cx="215" cy="125" rx="10" ry="15" fill="#3d7026"/>
+            <g class="crocodile" transform="translate(220, 140)">
+                <g class="legs">
+                    <ellipse cx="50" cy="170" rx="25" ry="12" fill="url(#crocBody)"/>
+                    <ellipse cx="40" cy="165" rx="15" ry="10" fill="url(#crocBody)"/>
+                    <ellipse cx="55" cy="175" rx="8" ry="5" fill="#1E8449"/>
+                </g>
 
-            <ellipse cx="290" cy="120" rx="18" ry="22" fill="url(#crocGradient)"/>
-            <ellipse cx="295" cy="115" rx="10" ry="15" fill="#3d7026"/>
+                <ellipse cx="80" cy="100" rx="55" ry="40" fill="url(#crocBody)"/>
+                <ellipse cx="80" cy="115" rx="40" ry="25" fill="url(#crocBelly)"/>
 
-            <ellipse cx="200" cy="175" rx="12" ry="8" fill="#ffcc00"/>
-            <ellipse cx="200" cy="175" rx="8" ry="5" fill="#ff9900"/>
-            <ellipse cx="200" cy="178" rx="4" ry="3" fill="#cc6600"/>
+                <ellipse cx="-30" cy="85" rx="50" ry="35" fill="url(#crocBody)"/>
+                <ellipse cx="-30" cy="95" rx="35" ry="22" fill="url(#crocBelly)"/>
 
-            <ellipse cx="200" cy="195" rx="15" ry="10" fill="#5d4e37"/>
-            <ellipse cx="200" cy="200" rx="8" ry="5" fill="#4a3f2d"/>
-        </g>
+                <ellipse cx="-80" cy="90" rx="40" ry="28" fill="url(#crocBody)"/>
 
-        <circle cx="300" cy="200" r="42" fill="none" stroke="#ff6b6b" stroke-width="2" stroke-dasharray="5,5" opacity="0"/>
-        <circle cx="100" cy="200" r="42" fill="none" stroke="#ff6b6b" stroke-width="2" stroke-dasharray="5,5" opacity="0"/>
-    </svg>
+                <g class="croc-eyes" transform="translate(-70, 75)">
+                    <ellipse cx="0" cy="0" rx="14" ry="16" fill="white"/>
+                    <ellipse cx="2" cy="2" rx="8" ry="10" fill="#2C3E50"/>
+                    <circle cx="4" cy="-2" r="3" fill="white"/>
+                    <ellipse cx="30" cy="5" rx="14" ry="16" fill="white"/>
+                    <ellipse cx="32" cy="7" rx="8" ry="10" fill="#2C3E50"/>
+                    <circle cx="35" cy="4" r="3" fill="white"/>
+                </g>
+
+                <path d="M-50 105 Q-35 115 -20 110 Q0 105 20 110 Q35 115 50 105 Q40 95 25 100 Q10 105 -10 100 Q-25 95 -40 100 Q-50 100 -50 105" fill="#FDFEFE" stroke="#BDC3C7" stroke-width="1"/>
+
+                <path d="M-48 105 L-42 115 L-36 105" fill="#FDFEFE"/>
+                <path d="M-25 108 L-19 118 L-13 108" fill="#FDFEFE"/>
+                <path d="M-2 108 L4 118 L10 108" fill="#FDFEFE"/>
+                <path d="M21 108 L27 118 L33 108" fill="#FDFEFE"/>
+
+                <path d="M-70 115 Q-85 105 -95 110" stroke="#1E8449" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+                <ellipse cx="-55" cy="90" rx="8" ry="5" fill="#27AE60"/>
+
+                <g transform="translate(-40, 70) rotate(-15)">
+                    <ellipse cx="0" cy="0" rx="18" ry="22" fill="url(#crocBody)"/>
+                    <ellipse cx="3" cy="-5" rx="10" ry="14" fill="#27AE60"/>
+                    <circle cx="0" cy="5" r="3" fill="#1E8449"/>
+                </g>
+
+                <g transform="translate(10, 65) rotate(10)">
+                    <ellipse cx="0" cy="0" rx="18" ry="22" fill="url(#crocBody)"/>
+                    <ellipse cx="-3" cy="-5" rx="10" ry="14" fill="#27AE60"/>
+                    <circle cx="0" cy="5" r="3" fill="#1E8449"/>
+                </g>
+
+                <path d="M60 90 Q70 80 80 85 Q90 90 85 100 Q80 110 70 105 Q60 100 60 90" fill="#E74C3C"/>
+                <ellipse cx="75" cy="95" rx="10" ry="6" fill="#FDFEFE"/>
+
+                <path d="M95 85 Q110 80 120 85 Q130 90 125 100 Q120 110 110 105 Q100 100 95 85" fill="url(#crocBody)"/>
+                <ellipse cx="118" cy="93" rx="8" ry="10" fill="url(#crocBody)"/>
+
+                <g transform="translate(130, 80)">
+                    <rect x="0" y="0" width="35" height="10" rx="5" fill="#8B4513"/>
+                    <rect x="30" y="-3" width="12" height="16" rx="3" fill="#E74C3C"/>
+                    <circle cx="33" cy="5" r="2" fill="#C0392B"/>
+                </g>
+
+                <ellipse cx="0" cy="130" rx="30" ry="15" fill="url(#crocBody)"/>
+                <ellipse cx="-30" cy="125" rx="25" ry="12" fill="url(#crocBody)"/>
+
+                <path d="M-30 118 Q-20 112 -10 118 Q0 124 10 118 Q20 112 30 118" stroke="#1E8449" stroke-width="2" fill="none"/>
+                <path d="M-35 125 Q-25 119 -15 125 Q-5 131 5 125 Q15 119 25 125" stroke="#1E8449" stroke-width="2" fill="none"/>
+
+                <path d="M30 130 Q40 125 50 130 Q60 135 55 142 Q50 150 40 145 Q30 140 30 130" stroke="#1E8449" stroke-width="2" fill="none"/>
+                <path d="M-30 130 Q-20 125 -10 130 Q0 135 -5 142 Q-10 150 -20 145 Q-30 140 -30 130" stroke="#1E8449" stroke-width="2" fill="none"/>
+            </g>
+
+            <g transform="translate(480, 320)">
+                <ellipse cx="0" cy="0" rx="60" ry="15" fill="#1E8449" opacity="0.3"/>
+                <g fill="#228B22">
+                    <ellipse cx="-30" cy="-20" rx="20" ry="25"/>
+                    <ellipse cx="-10" cy="-30" rx="15" ry="20"/>
+                    <ellipse cx="10" cy="-25" rx="18" ry="22"/>
+                    <ellipse cx="30" cy="-18" rx="20" ry="24"/>
+                </g>
+                <g fill="#2ECC71">
+                    <ellipse cx="-20" cy="-35" rx="12" ry="15"/>
+                    <ellipse cx="0" cy="-40" rx="10" ry="18"/>
+                    <ellipse cx="20" cy="-33" rx="14" ry="16"/>
+                </g>
+            </g>
+
+            <g transform="translate(50, 330)">
+                <ellipse cx="0" cy="0" rx="40" ry="12" fill="#1E8449" opacity="0.3"/>
+                <g fill="#228B22">
+                    <ellipse cx="-15" cy="-18" rx="15" ry="20"/>
+                    <ellipse cx="5" cy="-22" rx="12" ry="16"/>
+                    <ellipse cx="22" cy="-15" rx="14" ry="18"/>
+                </g>
+                <g fill="#2ECC71">
+                    <ellipse cx="-5" cy="-28" rx="8" ry="14"/>
+                    <ellipse cx="12" cy="-25" rx="10" ry="12"/>
+                </g>
+            </g>
+
+            <g transform="translate(350, 335)">
+                <ellipse cx="0" cy="0" rx="45" ry="12" fill="#1E8449" opacity="0.3"/>
+                <g fill="#228B22">
+                    <ellipse cx="-20" cy="-20" rx="16" ry="22"/>
+                    <ellipse cx="0" cy="-25" rx="14" ry="18"/>
+                    <ellipse cx="25" cy="-18" rx="15" ry="20"/>
+                </g>
+                <g fill="#2ECC71">
+                    <ellipse cx="-8" cy="-30" rx="9" ry="15"/>
+                    <ellipse cx="12" cy="-28" rx="11" ry="14"/>
+                </g>
+            </g>
+        </svg>
+    </div>
 </body>
 </html>

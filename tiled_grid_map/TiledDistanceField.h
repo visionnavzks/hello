@@ -42,14 +42,10 @@ public:
         num_blocks_y_ = (total_cells_y + BLOCK_SIZE - 1) >> BLOCK_BITS;
 
         // 分配全局指针数组（仅占几兆内存，存的都是空指针）
-        blocks_.resize(num_blocks_x_ * num_blocks_y_, nullptr);
+        blocks_.resize(num_blocks_x_ * num_blocks_y_);
     }
 
-    ~TiledDistanceField() {
-        for (auto* block : blocks_) {
-            delete block;
-        }
-    }
+    ~TiledDistanceField() = default;
 
     // 禁止拷贝，防止指针重复释放
     TiledDistanceField(const TiledDistanceField&) = delete;
@@ -70,9 +66,9 @@ public:
         if (bx < 0 || bx >= num_blocks_x_ || by < 0 || by >= num_blocks_y_) return;
 
         size_t block_idx = bx * num_blocks_y_ + by;
-        if (blocks_[block_idx] == nullptr) {
+        if (!blocks_[block_idx]) {
             // 只有路径经过的 3 米范围内，才会真正触发内存分配
-            blocks_[block_idx] = new GridBlock();
+            blocks_[block_idx] = std::make_unique<GridBlock>();
         }
 
         int local_x = gx & BLOCK_MASK;
@@ -130,10 +126,10 @@ private:
         }
 
         size_t block_idx = bx * num_blocks_y_ + by;
-        GridBlock* b = blocks_[block_idx];
+        GridBlock* b = blocks_[block_idx].get();
 
         // 如果该分块未分配内存，说明它在 3 米之外
-        if (b == nullptr) return MAX_DIST;
+        if (!b) return MAX_DIST;
 
         return b->distance[gx & BLOCK_MASK][gy & BLOCK_MASK];
     }
@@ -142,7 +138,7 @@ private:
     double res_;
     int num_blocks_x_;
     int num_blocks_y_;
-    std::vector<GridBlock*> blocks_; // 平铺的指针一维数组
+    std::vector<std::unique_ptr<GridBlock>> blocks_; // 平铺的指针一维数组
 };
 
 #endif // TILED_DISTANCE_FIELD_H

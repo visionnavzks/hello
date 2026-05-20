@@ -3,6 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <chrono>
+#include <random>
 
 void runTests() {
     std::cout << "Starting tests..." << std::endl;
@@ -77,7 +79,59 @@ void runTests() {
     std::cout << "Tests finished." << std::endl;
 }
 
+void runBenchmark() {
+    std::cout << "\nStarting Performance Benchmark..." << std::endl;
+
+    double map_min_x = 0.0, map_min_y = 0.0;
+    double resolution = 0.05;
+    TiledDistanceField sdf(map_min_x, map_min_y, 1000.0, 1000.0, resolution);
+
+    // Create a long dummy path
+    std::vector<Point> path;
+    for (int i = 0; i < 1000; ++i) {
+        path.push_back({10.0 + i * 0.5, 10.0 + i * 0.5});
+    }
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    buildDistanceFieldFromPath(sdf, path, resolution, map_min_x, map_min_y);
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::milli> build_ms = t2 - t1;
+    std::cout << "Built distance field for path of length " << path.size() << " in " << build_ms.count() << " ms." << std::endl;
+
+    // Benchmark Random Access
+    const int NUM_QUERIES = 10000000; // 10 million queries
+
+    std::mt19937 rng(42);
+    std::uniform_real_distribution<double> dist_x(0.0, 1000.0);
+    std::uniform_real_distribution<double> dist_y(0.0, 1000.0);
+
+    // Pre-generate random coordinates to exclude RNG overhead from benchmark
+    std::vector<Point> queries(NUM_QUERIES);
+    for (int i = 0; i < NUM_QUERIES; ++i) {
+        queries[i] = {dist_x(rng), dist_y(rng)};
+    }
+
+    float dist, gx, gy;
+    float dummy_sum = 0.0f; // to prevent optimizer from stripping out the loop
+
+    auto t3 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < NUM_QUERIES; ++i) {
+        sdf.getDistanceAndGradient(queries[i].x, queries[i].y, dist, gx, gy);
+        dummy_sum += dist;
+    }
+    auto t4 = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::milli> query_ms = t4 - t3;
+    std::cout << "Executed " << NUM_QUERIES << " random getDistanceAndGradient queries in " << query_ms.count() << " ms." << std::endl;
+    std::cout << "Average time per query: " << (query_ms.count() * 1e6 / NUM_QUERIES) << " nanoseconds." << std::endl;
+
+    // Print dummy sum so it isn't optimized away
+    std::cout << "(Dummy sum check: " << dummy_sum << ")" << std::endl;
+}
+
 int main() {
     runTests();
+    runBenchmark();
     return 0;
 }

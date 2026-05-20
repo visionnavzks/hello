@@ -62,15 +62,15 @@ public:
     void setDistance(double world_x, double world_y, float dist) {
         if (dist >= MAX_DIST) return; // 超过3米，不分配内存，直接丢弃
 
-        int gx = static_cast<int>((world_x - min_x_) / res_);
-        int gy = static_cast<int>((world_y - min_y_) / res_);
+        int gx = static_cast<int>(std::floor((world_x - min_x_) / res_));
+        int gy = static_cast<int>(std::floor((world_y - min_y_) / res_));
 
         int bx = gx >> BLOCK_BITS;
         int by = gy >> BLOCK_BITS;
 
         if (bx < 0 || bx >= num_blocks_x_ || by < 0 || by >= num_blocks_y_) return;
 
-        size_t block_idx = bx * num_blocks_y_ + by;
+        size_t block_idx = static_cast<size_t>(bx) * num_blocks_y_ + by;
         if (!blocks_[block_idx]) {
             // 只有路径经过的 3 米范围内，才会真正触发内存分配
             blocks_[block_idx] = std::make_unique<GridBlock>();
@@ -130,7 +130,7 @@ private:
             return MAX_DIST;
         }
 
-        size_t block_idx = bx * num_blocks_y_ + by;
+        size_t block_idx = static_cast<size_t>(bx) * num_blocks_y_ + by;
         GridBlock* b = blocks_[block_idx].get();
 
         // 如果该分块未分配内存，说明它在 3 米之外

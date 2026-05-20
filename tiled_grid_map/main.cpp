@@ -66,6 +66,28 @@ void runTests() {
         std::cerr << "Test 4 failed: gradient should be zero in flat MAX_DIST area!\n";
     }
 
+    // Test Exceptions for invalid parameters
+    std::cout << "\nTesting exception handling..." << std::endl;
+    bool caught = false;
+    try {
+        TiledDistanceField invalid_sdf(100.0, 100.0, 50.0, 100.0, 0.05); // max_x < min_x
+    } catch (const std::invalid_argument& e) {
+        caught = true;
+    }
+    if (!caught) {
+        std::cerr << "Test 5 failed: Expected invalid_argument exception for max_x < min_x!\n";
+    }
+
+    caught = false;
+    try {
+        TiledDistanceField invalid_sdf(0.0, 0.0, 100.0, 100.0, -0.05); // negative resolution
+    } catch (const std::invalid_argument& e) {
+        caught = true;
+    }
+    if (!caught) {
+        std::cerr << "Test 6 failed: Expected invalid_argument exception for negative resolution!\n";
+    }
+
     // Original demo from user
     std::cout << "\nRunning user demo..." << std::endl;
     std::vector<Point> demo_path = {

@@ -7,6 +7,7 @@
 #include <memory>
 #include <cassert>
 #include <algorithm>
+#include <stdexcept>
 
 // 地图常数配置
 const float MAX_DIST = 3.0f;     // 截断距离 3米
@@ -32,6 +33,10 @@ class TiledDistanceField {
 public:
     TiledDistanceField(double min_x, double min_y, double max_x, double max_y, double resolution)
         : min_x_(min_x), min_y_(min_y), res_(resolution) {
+
+        if (max_x <= min_x || max_y <= min_y || resolution <= 0.0) {
+            throw std::invalid_argument("Invalid map parameters: bounds or resolution are incorrect.");
+        }
 
         // 计算总网格数
         int total_cells_x = static_cast<int>(std::ceil((max_x - min_x) / res_));

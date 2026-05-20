@@ -11,7 +11,7 @@ struct Point {
 };
 
 // 辅助几何函数：计算点 P 到线段 AB 的最短距离
-double computePointToSegmentDistance(const Point& p, const Point& a, const Point& b) {
+inline double computePointToSegmentDistance(const Point& p, const Point& a, const Point& b) {
     double ab_x = b.x - a.x;
     double ab_y = b.y - a.y;
     double ap_x = p.x - a.x;
@@ -42,7 +42,7 @@ double computePointToSegmentDistance(const Point& p, const Point& a, const Point
  * @param sdf  刚才定义的地图对象
  * @param path 连续的路径点集合 (S很长)
  */
-void buildDistanceFieldFromPath(TiledDistanceField& sdf, const std::vector<Point>& path, double res, double min_x, double min_y) {
+inline void buildDistanceFieldFromPath(TiledDistanceField& sdf, const std::vector<Point>& path, double res, double min_x, double min_y) {
     if (path.size() < 2) return;
 
     const double SEARCH_RAD = MAX_DIST; // 只需要3米范围 (MAX_DIST is 3.0f defined in TiledDistanceField.h)

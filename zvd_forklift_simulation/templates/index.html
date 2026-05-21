@@ -3,22 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>High-Reach Forklift Dynamic ZVD Simulation</title>
+    <title data-i18n="pageTitle">High-Reach Forklift Dynamic ZVD Simulation</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        h1 { text-align: center; color: #2c3e50; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto 20px auto; }
+        h1 { margin: 0; color: #2c3e50; }
+        .lang-switcher { display: flex; gap: 10px; }
+        .lang-switcher button { padding: 5px 10px; font-size: 14px; cursor: pointer; border: 1px solid #3498db; background: transparent; color: #3498db; border-radius: 4px; }
+        .lang-switcher button.active { background: #3498db; color: white; }
         .container { display: flex; flex-direction: column; gap: 20px; max-width: 1400px; margin: 0 auto; }
         .params-form { display: flex; flex-wrap: wrap; gap: 15px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); justify-content: center; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #7f8c8d; }
         .form-group input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
         .controls { display: flex; justify-content: center; gap: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #3498db; color: white; transition: background-color 0.3s; }
-        button:hover { background-color: #2980b9; }
-        button.active { background-color: #2c3e50; }
-        button#btn-simulate { background-color: #e67e22; font-weight: bold; }
+        .action-btn { padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #3498db; color: white; transition: background-color 0.3s; }
+        .action-btn:hover { background-color: #2980b9; }
+        .action-btn.active { background-color: #2c3e50; }
+        button#btn-simulate { background-color: #e67e22; font-weight: bold; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; color: white; transition: background-color 0.3s; }
         button#btn-simulate:hover { background-color: #d35400; }
+        button#btn-play { background-color: #27ae60; font-weight: bold; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; color: white; transition: background-color 0.3s; }
+        button#btn-play:hover { background-color: #219653; }
         .canvas-container { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; text-align: center; }
         canvas#animCanvas { border: 1px solid #ddd; background-color: #fafafa; width: 100%; height: 400px; }
         .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -28,45 +34,51 @@
 </head>
 <body>
 
-<h1>High-Reach Forklift Simulation (Dynamic Backend)</h1>
+<div class="header-container">
+    <h1 data-i18n="mainTitle">High-Reach Forklift Simulation (Dynamic Backend)</h1>
+    <div class="lang-switcher">
+        <button id="btn-lang-en" class="active" onclick="setLanguage('en')">English</button>
+        <button id="btn-lang-zh" onclick="setLanguage('zh')">中文</button>
+    </div>
+</div>
 
 <div class="container">
     <div class="params-form">
         <div class="form-group">
-            <label>Freq f_n (Hz)</label>
+            <label data-i18n="lblFn">Freq f_n (Hz)</label>
             <input type="number" id="inp_fn" value="0.5" step="0.1">
         </div>
         <div class="form-group">
-            <label>Damping ζ</label>
+            <label data-i18n="lblZeta">Damping ζ</label>
             <input type="number" id="inp_zeta" value="0.02" step="0.01">
         </div>
         <div class="form-group">
-            <label>Dist (m)</label>
+            <label data-i18n="lblDist">Dist (m)</label>
             <input type="number" id="inp_distance" value="5.0" step="0.5">
         </div>
         <div class="form-group">
-            <label>V_max (m/s)</label>
+            <label data-i18n="lblVmax">V_max (m/s)</label>
             <input type="number" id="inp_vmax" value="1.0" step="0.1">
         </div>
         <div class="form-group">
-            <label>A_max (m/s²)</label>
+            <label data-i18n="lblAmax">A_max (m/s²)</label>
             <input type="number" id="inp_amax" value="0.5" step="0.1">
         </div>
         <div class="form-group">
-            <label>PT1 Delay T_m</label>
+            <label data-i18n="lblTm">PT1 Delay T_m</label>
             <input type="number" id="inp_Tm" value="0.1" step="0.05">
         </div>
         <div class="form-group" style="justify-content: flex-end;">
-            <button id="btn-simulate" onclick="fetchSimulation()">Recalculate Dynamics</button>
+            <button id="btn-simulate" onclick="fetchSimulation()" data-i18n="btnCalc">Recalculate Dynamics</button>
         </div>
     </div>
 
-    <div id="loading">Calculating physical simulation on the backend...</div>
+    <div id="loading" data-i18n="msgLoading">Calculating physical simulation on the backend...</div>
 
     <div class="controls">
-        <button id="btn-trap" class="active" onclick="switchMode('trap')">Trapezoidal Velocity</button>
-        <button id="btn-scurve" onclick="switchMode('scurve')">S-Curve Velocity</button>
-        <button onclick="playAnimation()" style="background-color: #27ae60;">Play Animation</button>
+        <button id="btn-trap" class="action-btn active" onclick="switchMode('trap')" data-i18n="btnTrap">Trapezoidal Velocity</button>
+        <button id="btn-scurve" class="action-btn" onclick="switchMode('scurve')" data-i18n="btnScurve">S-Curve Velocity</button>
+        <button id="btn-play" onclick="playAnimation()" data-i18n="btnPlay">Play Animation</button>
     </div>
 
     <div class="canvas-container">
@@ -82,37 +94,179 @@
 </div>
 
 <script>
+    // --- Localization ---
+    const i18n = {
+        'en': {
+            pageTitle: 'High-Reach Forklift Dynamic ZVD Simulation',
+            mainTitle: 'High-Reach Forklift Simulation (Dynamic Backend)',
+            lblFn: 'Freq f_n (Hz)',
+            lblZeta: 'Damping ζ',
+            lblDist: 'Dist (m)',
+            lblVmax: 'V_max (m/s)',
+            lblAmax: 'A_max (m/s²)',
+            lblTm: 'PT1 Delay T_m',
+            btnCalc: 'Recalculate Dynamics',
+            msgLoading: 'Calculating physical simulation on the backend...',
+            btnTrap: 'Trapezoidal Velocity',
+            btnScurve: 'S-Curve Velocity',
+            btnPlay: 'Play Animation',
+            chartTime: 'Time (s)',
+            chartAccelTitle: 'Acceleration Command vs. Actual',
+            chartAccelY: 'Acceleration (m/s²)',
+            chartVibTitle: 'Cargo Vibration',
+            chartVibY: 'Displacement (m)',
+            chartVelTitle: 'Forklift Velocity',
+            chartVelY: 'Velocity (m/s)',
+            chartPosTitle: 'Forklift Position',
+            chartPosY: 'Position (m)',
+            labelTradCmd: 'Trad. (Cmd)',
+            labelTradAct: 'Trad. (Act)',
+            labelZVDCmd: 'ZVD (Cmd)',
+            labelZVDAct: 'ZVD (Act)',
+            labelTrad: 'Traditional',
+            labelZVD: 'ZVD Shaped',
+            canvasTime: 'Time',
+            canvasTrad: 'Traditional',
+            canvasZVD: 'ZVD'
+        },
+        'zh': {
+            pageTitle: '高位叉车动态 ZVD 仿真',
+            mainTitle: '高位叉车 ZVD 防晃仿真 (动态后端)',
+            lblFn: '固有频率 f_n (Hz)',
+            lblZeta: '阻尼比 ζ',
+            lblDist: '移动距离 (m)',
+            lblVmax: '最大速度 (m/s)',
+            lblAmax: '最大加速度 (m/s²)',
+            lblTm: '电机延迟 T_m (秒)',
+            btnCalc: '重新计算动力学',
+            msgLoading: '正在后端计算物理仿真数据...',
+            btnTrap: '梯形速度规划',
+            btnScurve: 'S型速度规划',
+            btnPlay: '播放动画',
+            chartTime: '时间 (秒)',
+            chartAccelTitle: '加速度指令与实际底层响应对比',
+            chartAccelY: '加速度 (m/s²)',
+            chartVibTitle: '上方货物晃动位移',
+            chartVibY: '位移 (m)',
+            chartVelTitle: '叉车底盘速度',
+            chartVelY: '速度 (m/s)',
+            chartPosTitle: '叉车底盘位置',
+            chartPosY: '位置 (m)',
+            labelTradCmd: '传统 (指令)',
+            labelTradAct: '传统 (实际)',
+            labelZVDCmd: 'ZVD (指令)',
+            labelZVDAct: 'ZVD (实际)',
+            labelTrad: '传统停法',
+            labelZVD: 'ZVD 优化',
+            canvasTime: '时间',
+            canvasTrad: '传统急停',
+            canvasZVD: 'ZVD 防晃'
+        }
+    };
+
+    let currentLang = 'en';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
+        document.getElementById('btn-lang-zh').classList.toggle('active', lang === 'zh');
+
+        // Update HTML elements
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (i18n[lang][key]) {
+                if (el.tagName === 'TITLE') {
+                    document.title = i18n[lang][key];
+                } else {
+                    el.innerText = i18n[lang][key];
+                }
+            }
+        });
+
+        // Update Charts if they exist
+        if (accelChart) {
+            updateCharti18n();
+        }
+
+        // Redraw canvas frame to update text if paused
+        if (!isPlaying && simData) {
+            drawFrame();
+        }
+    }
+
+    // --- Simulation Logic ---
     let simData = null;
     let currentMode = 'trap';
     let animationId = null;
     let isPlaying = false;
-
     let accelChart, vibChart, velChart, posChart;
 
     function initCharts() {
-        const createChart = (ctxId, title, yLabel, isAccel = false) => {
+        const createChart = (ctxId) => {
             const ctx = document.getElementById(ctxId).getContext('2d');
-            let datasets = isAccel ? [
-                { label: 'Trad. (Cmd)', borderColor: 'rgba(231, 76, 60, 0.3)', borderDash: [2, 2], pointRadius: 0, data: [] },
-                { label: 'Trad. (Act)', borderColor: '#e74c3c', pointRadius: 0, data: [] },
-                { label: 'ZVD (Cmd)', borderColor: 'rgba(52, 152, 219, 0.3)', borderDash: [2, 2], pointRadius: 0, data: [] },
-                { label: 'ZVD (Act)', borderColor: '#3498db', pointRadius: 0, data: [] }
-            ] : [
-                { label: 'Traditional', borderColor: '#e74c3c', borderDash: [5, 5], pointRadius: 0, data: [] },
-                { label: 'ZVD Shaped', borderColor: '#3498db', pointRadius: 0, data: [] }
-            ];
-
             return new Chart(ctx, {
                 type: 'line',
-                data: { labels: [], datasets: datasets },
-                options: { responsive: true, animation: false, plugins: { title: { display: true, text: title, font: {size: 16} } }, scales: { x: { title: { display: true, text: 'Time (s)' } }, y: { title: { display: true, text: yLabel } } } }
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    plugins: { title: { display: true, text: '', font: {size: 16} } },
+                    scales: { x: { title: { display: true, text: '' } }, y: { title: { display: true, text: '' } } }
+                }
             });
         };
 
-        accelChart = createChart('accelChart', 'Acceleration Command vs. Actual', 'Acceleration (m/s²)', true);
-        vibChart = createChart('vibChart', 'Cargo Vibration', 'Displacement (m)');
-        velChart = createChart('velChart', 'Forklift Velocity', 'Velocity (m/s)');
-        posChart = createChart('posChart', 'Forklift Position', 'Position (m)');
+        accelChart = createChart('accelChart');
+        vibChart = createChart('vibChart');
+        velChart = createChart('velChart');
+        posChart = createChart('posChart');
+
+        // Populate initial dataset structure
+        accelChart.data.datasets = [
+            { label: '', borderColor: 'rgba(231, 76, 60, 0.3)', borderDash: [2, 2], pointRadius: 0, data: [] },
+            { label: '', borderColor: '#e74c3c', pointRadius: 0, data: [] },
+            { label: '', borderColor: 'rgba(52, 152, 219, 0.3)', borderDash: [2, 2], pointRadius: 0, data: [] },
+            { label: '', borderColor: '#3498db', pointRadius: 0, data: [] }
+        ];
+
+        [vibChart, velChart, posChart].forEach(chart => {
+            chart.data.datasets = [
+                { label: '', borderColor: '#e74c3c', borderDash: [5, 5], pointRadius: 0, data: [] },
+                { label: '', borderColor: '#3498db', pointRadius: 0, data: [] }
+            ];
+        });
+
+        updateCharti18n();
+    }
+
+    function updateCharti18n() {
+        const t = i18n[currentLang];
+
+        // Update Titles and Axes
+        accelChart.options.plugins.title.text = t.chartAccelTitle;
+        accelChart.options.scales.y.title.text = t.chartAccelY;
+        accelChart.options.scales.x.title.text = t.chartTime;
+        accelChart.data.datasets[0].label = t.labelTradCmd;
+        accelChart.data.datasets[1].label = t.labelTradAct;
+        accelChart.data.datasets[2].label = t.labelZVDCmd;
+        accelChart.data.datasets[3].label = t.labelZVDAct;
+        accelChart.update();
+
+        vibChart.options.plugins.title.text = t.chartVibTitle;
+        vibChart.options.scales.y.title.text = t.chartVibY;
+
+        velChart.options.plugins.title.text = t.chartVelTitle;
+        velChart.options.scales.y.title.text = t.chartVelY;
+
+        posChart.options.plugins.title.text = t.chartPosTitle;
+        posChart.options.scales.y.title.text = t.chartPosY;
+
+        [vibChart, velChart, posChart].forEach(chart => {
+            chart.options.scales.x.title.text = t.chartTime;
+            chart.data.datasets[0].label = t.labelTrad;
+            chart.data.datasets[1].label = t.labelZVD;
+            chart.update();
+        });
     }
 
     function updateCharts() {
@@ -179,13 +333,15 @@
 
         if(!simData) return;
 
-        const t = simData.t[frameIdx];
+        const tStr = simData.t[frameIdx];
         const modeData = simData[currentMode];
+        const tObj = i18n[currentLang];
 
-        ctx.fillStyle = '#2c3e50'; ctx.font = "18px Arial"; ctx.fillText(`Time: ${t.toFixed(2)} s`, 20, 30);
+        ctx.fillStyle = '#2c3e50'; ctx.font = "18px Arial";
+        ctx.fillText(`${tObj.canvasTime}: ${tStr.toFixed(2)} s`, 20, 30);
 
-        drawForkliftOverlay(modeData.raw.p[frameIdx], 200, modeData.raw.y[frameIdx], 'rgba(231, 76, 60, 0.8)', 'Traditional');
-        drawForkliftOverlay(modeData.zvd.p[frameIdx], 200, modeData.zvd.y[frameIdx], 'rgba(52, 152, 219, 0.8)', 'ZVD');
+        drawForkliftOverlay(modeData.raw.p[frameIdx], 200, modeData.raw.y[frameIdx], 'rgba(231, 76, 60, 0.8)', tObj.canvasTrad);
+        drawForkliftOverlay(modeData.zvd.p[frameIdx], 200, modeData.zvd.y[frameIdx], 'rgba(52, 152, 219, 0.8)', tObj.canvasZVD);
 
         if (isPlaying) {
             frameIdx++;
@@ -198,9 +354,8 @@
     }
 
     function drawForkliftOverlay(x, baseY, deflection, color, label) {
-        // dynamic scaling to fit screen
         const max_dist = parseFloat(document.getElementById('inp_distance').value);
-        const scale = canvas.width * 0.8 / (max_dist + 2); // adaptive scale
+        const scale = canvas.width * 0.8 / (max_dist + 2);
         const baseX = 50 + x * scale;
 
         ctx.fillStyle = color; ctx.fillRect(baseX - 40, baseY - 30, 80, 30);
@@ -210,7 +365,7 @@
         const mastHeight = 150;
         ctx.fillStyle = color; ctx.fillRect(baseX + 20, baseY - 30 - mastHeight, 6, mastHeight);
 
-        const cargoX = baseX + 20 + (deflection * scale * 2); // Exaggerating deflection slightly
+        const cargoX = baseX + 20 + (deflection * scale * 2);
         const cargoY = baseY - 30 - mastHeight;
 
         ctx.beginPath(); ctx.moveTo(baseX + 23, cargoY); ctx.lineTo(cargoX + 5, cargoY + 20); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
@@ -234,8 +389,10 @@
     }
 
     window.onload = () => {
+        // Run initial translation assignment
+        setLanguage(currentLang);
         initCharts();
-        fetchSimulation(); // load initial
+        fetchSimulation();
     };
 </script>
 </body>

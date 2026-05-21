@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-Reach Forklift Dynamic ZVD Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        h1 { text-align: center; color: #2c3e50; }
+        .container { display: flex; flex-direction: column; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .params-form { display: flex; flex-wrap: wrap; gap: 15px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); justify-content: center; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #7f8c8d; }
+        .form-group input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+        .controls { display: flex; justify-content: center; gap: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #3498db; color: white; transition: background-color 0.3s; }
+        button:hover { background-color: #2980b9; }
+        button.active { background-color: #2c3e50; }
+        button#btn-simulate { background-color: #e67e22; font-weight: bold; }
+        button#btn-simulate:hover { background-color: #d35400; }
+        .canvas-container { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; text-align: center; }
+        canvas#animCanvas { border: 1px solid #ddd; background-color: #fafafa; width: 100%; height: 400px; }
+        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #loading { display: none; text-align: center; font-size: 18px; color: #e67e22; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>High-Reach Forklift Simulation (Dynamic Backend)</h1>
+
+<div class="container">
+    <div class="params-form">
+        <div class="form-group">
+            <label>Freq f_n (Hz)</label>
+            <input type="number" id="inp_fn" value="0.5" step="0.1">
+        </div>
+        <div class="form-group">
+            <label>Damping ζ</label>
+            <input type="number" id="inp_zeta" value="0.02" step="0.01">
+        </div>
+        <div class="form-group">
+            <label>Dist (m)</label>
+            <input type="number" id="inp_distance" value="5.0" step="0.5">
+        </div>
+        <div class="form-group">
+            <label>V_max (m/s)</label>
+            <input type="number" id="inp_vmax" value="1.0" step="0.1">
+        </div>
+        <div class="form-group">
+            <label>A_max (m/s²)</label>
+            <input type="number" id="inp_amax" value="0.5" step="0.1">
+        </div>
+        <div class="form-group">
+            <label>PT1 Delay T_m</label>
+            <input type="number" id="inp_Tm" value="0.1" step="0.05">
+        </div>
+        <div class="form-group" style="justify-content: flex-end;">
+            <button id="btn-simulate" onclick="fetchSimulation()">Recalculate Dynamics</button>
+        </div>
+    </div>
+
+    <div id="loading">Calculating physical simulation on the backend...</div>
+
+    <div class="controls">
+        <button id="btn-trap" class="active" onclick="switchMode('trap')">Trapezoidal Velocity</button>
+        <button id="btn-scurve" onclick="switchMode('scurve')">S-Curve Velocity</button>
+        <button onclick="playAnimation()" style="background-color: #27ae60;">Play Animation</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="animCanvas" width="1200" height="400"></canvas>
+    </div>
+
+    <div class="charts-container">
+        <div class="chart-box"><canvas id="accelChart"></canvas></div>
+        <div class="chart-box"><canvas id="vibChart"></canvas></div>
+        <div class="chart-box"><canvas id="velChart"></canvas></div>
+        <div class="chart-box"><canvas id="posChart"></canvas></div>
+    </div>
+</div>
+
+<script>
+    let simData = null;
+    let currentMode = 'trap';
+    let animationId = null;
+    let isPlaying = false;
+
+    let accelChart, vibChart, velChart, posChart;
+
+    function initCharts() {
+        const createChart = (ctxId, title, yLabel, isAccel = false) => {
+            const ctx = document.getElementById(ctxId).getContext('2d');
+            let datasets = isAccel ? [
+                { label: 'Trad. (Cmd)', borderColor: 'rgba(231, 76, 60, 0.3)', borderDash: [2, 2], pointRadius: 0, data: [] },
+                { label: 'Trad. (Act)', borderColor: '#e74c3c', pointRadius: 0, data: [] },
+                { label: 'ZVD (Cmd)', borderColor: 'rgba(52, 152, 219, 0.3)', borderDash: [2, 2], pointRadius: 0, data: [] },
+                { label: 'ZVD (Act)', borderColor: '#3498db', pointRadius: 0, data: [] }
+            ] : [
+                { label: 'Traditional', borderColor: '#e74c3c', borderDash: [5, 5], pointRadius: 0, data: [] },
+                { label: 'ZVD Shaped', borderColor: '#3498db', pointRadius: 0, data: [] }
+            ];
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: datasets },
+                options: { responsive: true, animation: false, plugins: { title: { display: true, text: title, font: {size: 16} } }, scales: { x: { title: { display: true, text: 'Time (s)' } }, y: { title: { display: true, text: yLabel } } } }
+            });
+        };
+
+        accelChart = createChart('accelChart', 'Acceleration Command vs. Actual', 'Acceleration (m/s²)', true);
+        vibChart = createChart('vibChart', 'Cargo Vibration', 'Displacement (m)');
+        velChart = createChart('velChart', 'Forklift Velocity', 'Velocity (m/s)');
+        posChart = createChart('posChart', 'Forklift Position', 'Position (m)');
+    }
+
+    function updateCharts() {
+        if(!simData) return;
+        const modeData = simData[currentMode];
+
+        const updateChartData = (chart, datasetsData) => {
+            chart.data.labels = simData.t;
+            datasetsData.forEach((d, i) => chart.data.datasets[i].data = d);
+            chart.update();
+        };
+
+        updateChartData(accelChart, [modeData.raw.a_cmd, modeData.raw.a_act, modeData.zvd.a_cmd, modeData.zvd.a_act]);
+        updateChartData(vibChart, [modeData.raw.y, modeData.zvd.y]);
+        updateChartData(velChart, [modeData.raw.v, modeData.zvd.v]);
+        updateChartData(posChart, [modeData.raw.p, modeData.zvd.p]);
+    }
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.getElementById('btn-trap').classList.toggle('active', mode === 'trap');
+        document.getElementById('btn-scurve').classList.toggle('active', mode === 'scurve');
+        updateCharts();
+        resetAnimation();
+    }
+
+    async function fetchSimulation() {
+        document.getElementById('loading').style.display = 'block';
+        resetAnimation();
+
+        const payload = {
+            fn: parseFloat(document.getElementById('inp_fn').value),
+            zeta: parseFloat(document.getElementById('inp_zeta').value),
+            distance: parseFloat(document.getElementById('inp_distance').value),
+            v_max: parseFloat(document.getElementById('inp_vmax').value),
+            a_max: parseFloat(document.getElementById('inp_amax').value),
+            T_m: parseFloat(document.getElementById('inp_Tm').value)
+        };
+
+        try {
+            const response = await fetch('/api/simulate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            simData = await response.json();
+            updateCharts();
+            drawFrame();
+        } catch (error) {
+            alert('Error fetching simulation data');
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    // Animation Logic
+    const canvas = document.getElementById('animCanvas');
+    const ctx = canvas.getContext('2d');
+    let frameIdx = 0;
+
+    function drawFrame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath(); ctx.moveTo(0, 360); ctx.lineTo(canvas.width, 360); ctx.strokeStyle = '#bdc3c7'; ctx.lineWidth = 2; ctx.stroke();
+
+        if(!simData) return;
+
+        const t = simData.t[frameIdx];
+        const modeData = simData[currentMode];
+
+        ctx.fillStyle = '#2c3e50'; ctx.font = "18px Arial"; ctx.fillText(`Time: ${t.toFixed(2)} s`, 20, 30);
+
+        drawForkliftOverlay(modeData.raw.p[frameIdx], 200, modeData.raw.y[frameIdx], 'rgba(231, 76, 60, 0.8)', 'Traditional');
+        drawForkliftOverlay(modeData.zvd.p[frameIdx], 200, modeData.zvd.y[frameIdx], 'rgba(52, 152, 219, 0.8)', 'ZVD');
+
+        if (isPlaying) {
+            frameIdx++;
+            if (frameIdx < simData.t.length) {
+                animationId = requestAnimationFrame(drawFrame);
+            } else {
+                isPlaying = false;
+            }
+        }
+    }
+
+    function drawForkliftOverlay(x, baseY, deflection, color, label) {
+        // dynamic scaling to fit screen
+        const max_dist = parseFloat(document.getElementById('inp_distance').value);
+        const scale = canvas.width * 0.8 / (max_dist + 2); // adaptive scale
+        const baseX = 50 + x * scale;
+
+        ctx.fillStyle = color; ctx.fillRect(baseX - 40, baseY - 30, 80, 30);
+        ctx.fillStyle = 'rgba(50,50,50,0.8)'; ctx.beginPath(); ctx.arc(baseX - 25, baseY, 10, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(baseX + 25, baseY, 10, 0, Math.PI*2); ctx.fill();
+
+        const mastHeight = 150;
+        ctx.fillStyle = color; ctx.fillRect(baseX + 20, baseY - 30 - mastHeight, 6, mastHeight);
+
+        const cargoX = baseX + 20 + (deflection * scale * 2); // Exaggerating deflection slightly
+        const cargoY = baseY - 30 - mastHeight;
+
+        ctx.beginPath(); ctx.moveTo(baseX + 23, cargoY); ctx.lineTo(cargoX + 5, cargoY + 20); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = color; ctx.fillRect(cargoX - 15, cargoY + 20, 30, 30);
+        ctx.fillStyle = 'white'; ctx.font = "12px Arial"; ctx.fillText(label, baseX - 30, baseY - 10);
+    }
+
+    function playAnimation() {
+        if (!isPlaying && simData) {
+            if (frameIdx >= simData.t.length - 1) frameIdx = 0;
+            isPlaying = true;
+            drawFrame();
+        }
+    }
+
+    function resetAnimation() {
+        isPlaying = false;
+        if (animationId) cancelAnimationFrame(animationId);
+        frameIdx = 0;
+        drawFrame();
+    }
+
+    window.onload = () => {
+        initCharts();
+        fetchSimulation(); // load initial
+    };
+</script>
+</body>
+</html>

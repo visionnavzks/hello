@@ -24,21 +24,24 @@ def run_simulation(fn, zeta, distance, v_max, a_max, T_m):
     amps, times = calculate_zvd_parameters(fn, zeta)
 
     dt = 0.005
-    # Calculate a conservative time window
-    # distance / v_max gives base travel time. Add acceleration time, delay times, and settling time.
     travel_time = distance / v_max if v_max > 0 else 0
     accel_time = v_max / a_max if a_max > 0 else 0
-    total_time = travel_time + 2*accel_time + times[2] + 5.0 # +5s for settling
+    total_time = travel_time + 2*accel_time + times[2] + 5.0
 
     t = np.arange(0, total_time, dt)
 
     # Raw commands
-    a_trap_cmd, _, _ = generate_trapezoidal_velocity(t, distance=distance, v_max=v_max, a_max=a_max)
-    a_scurve_cmd, _, _ = generate_s_curve_velocity(t, distance=distance, v_max=v_max, a_max=a_max)
+    a_trap_cmd, v_trap_cmd, p_trap_cmd = generate_trapezoidal_velocity(t, distance=distance, v_max=v_max, a_max=a_max)
+    a_scurve_cmd, v_scurve_cmd, p_scurve_cmd = generate_s_curve_velocity(t, distance=distance, v_max=v_max, a_max=a_max)
 
     # Shaped commands
     a_trap_zvd_cmd = apply_zvd(a_trap_cmd, t, amps, times)
+    v_trap_zvd_cmd = np.cumsum(a_trap_zvd_cmd) * dt
+    p_trap_zvd_cmd = np.cumsum(v_trap_zvd_cmd) * dt
+
     a_scurve_zvd_cmd = apply_zvd(a_scurve_cmd, t, amps, times)
+    v_scurve_zvd_cmd = np.cumsum(a_scurve_zvd_cmd) * dt
+    p_scurve_zvd_cmd = np.cumsum(v_scurve_zvd_cmd) * dt
 
     def simulate_actual_kinematics(a_cmd):
         _, a_act, _ = lsim(sys_motor, U=a_cmd, T=t)
@@ -58,19 +61,31 @@ def run_simulation(fn, zeta, distance, v_max, a_max, T_m):
     _, y_scurve_raw, _ = lsim(sys_cargo, U=a_scurve_act, T=t)
     _, y_scurve_zvd, _ = lsim(sys_cargo, U=a_scurve_zvd_act, T=t)
 
-    skip = 10 # Subsample for frontend performance
+    skip = 10
     def subsample(arr):
         return [round(float(val), 4) for val in arr[::skip]]
 
     return {
         "t": subsample(t),
         "trap": {
-            "raw": {"a_cmd": subsample(a_trap_cmd), "a_act": subsample(a_trap_act), "v": subsample(v_trap_act), "p": subsample(p_trap_act), "y": subsample(y_trap_raw)},
-            "zvd": {"a_cmd": subsample(a_trap_zvd_cmd), "a_act": subsample(a_trap_zvd_act), "v": subsample(v_trap_zvd_act), "p": subsample(p_trap_zvd_act), "y": subsample(y_trap_zvd)}
+            "raw": {"a_cmd": subsample(a_trap_cmd), "a_act": subsample(a_trap_act),
+                    "v_cmd": subsample(v_trap_cmd), "v_act": subsample(v_trap_act),
+                    "p_cmd": subsample(p_trap_cmd), "p_act": subsample(p_trap_act),
+                    "y": subsample(y_trap_raw)},
+            "zvd": {"a_cmd": subsample(a_trap_zvd_cmd), "a_act": subsample(a_trap_zvd_act),
+                    "v_cmd": subsample(v_trap_zvd_cmd), "v_act": subsample(v_trap_zvd_act),
+                    "p_cmd": subsample(p_trap_zvd_cmd), "p_act": subsample(p_trap_zvd_act),
+                    "y": subsample(y_trap_zvd)}
         },
         "scurve": {
-            "raw": {"a_cmd": subsample(a_scurve_cmd), "a_act": subsample(a_scurve_act), "v": subsample(v_scurve_act), "p": subsample(p_scurve_act), "y": subsample(y_scurve_raw)},
-            "zvd": {"a_cmd": subsample(a_scurve_zvd_cmd), "a_act": subsample(a_scurve_zvd_act), "v": subsample(v_scurve_zvd_act), "p": subsample(p_scurve_zvd_act), "y": subsample(y_scurve_zvd)}
+            "raw": {"a_cmd": subsample(a_scurve_cmd), "a_act": subsample(a_scurve_act),
+                    "v_cmd": subsample(v_scurve_cmd), "v_act": subsample(v_scurve_act),
+                    "p_cmd": subsample(p_scurve_cmd), "p_act": subsample(p_scurve_act),
+                    "y": subsample(y_scurve_raw)},
+            "zvd": {"a_cmd": subsample(a_scurve_zvd_cmd), "a_act": subsample(a_scurve_zvd_act),
+                    "v_cmd": subsample(v_scurve_zvd_cmd), "v_act": subsample(v_scurve_zvd_act),
+                    "p_cmd": subsample(p_scurve_zvd_cmd), "p_act": subsample(p_scurve_zvd_act),
+                    "y": subsample(y_scurve_zvd)}
         }
     }
 

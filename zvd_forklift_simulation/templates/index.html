@@ -115,9 +115,9 @@
             chartAccelY: 'Acceleration (m/s²)',
             chartVibTitle: 'Cargo Vibration',
             chartVibY: 'Displacement (m)',
-            chartVelTitle: 'Forklift Velocity',
+            chartVelTitle: 'Velocity Command vs. Actual',
             chartVelY: 'Velocity (m/s)',
-            chartPosTitle: 'Forklift Position',
+            chartPosTitle: 'Position Command vs. Actual',
             chartPosY: 'Position (m)',
             labelTradCmd: 'Trad. (Cmd)',
             labelTradAct: 'Trad. (Act)',
@@ -148,9 +148,9 @@
             chartAccelY: '加速度 (m/s²)',
             chartVibTitle: '上方货物晃动位移',
             chartVibY: '位移 (m)',
-            chartVelTitle: '叉车底盘速度',
+            chartVelTitle: '速度指令与实际响应对比',
             chartVelY: '速度 (m/s)',
-            chartPosTitle: '叉车底盘位置',
+            chartPosTitle: '位置指令与实际响应对比',
             chartPosY: '位置 (m)',
             labelTradCmd: '传统 (指令)',
             labelTradAct: '传统 (实际)',
@@ -229,12 +229,19 @@
             { label: '', borderColor: '#3498db', pointRadius: 0, data: [] }
         ];
 
-        [vibChart, velChart, posChart].forEach(chart => {
+        [velChart, posChart].forEach(chart => {
             chart.data.datasets = [
-                { label: '', borderColor: '#e74c3c', borderDash: [5, 5], pointRadius: 0, data: [] },
+                { label: '', borderColor: 'rgba(231, 76, 60, 0.3)', borderDash: [2, 2], pointRadius: 0, data: [] },
+                { label: '', borderColor: '#e74c3c', pointRadius: 0, data: [] },
+                { label: '', borderColor: 'rgba(52, 152, 219, 0.3)', borderDash: [2, 2], pointRadius: 0, data: [] },
                 { label: '', borderColor: '#3498db', pointRadius: 0, data: [] }
             ];
         });
+
+        vibChart.data.datasets = [
+            { label: '', borderColor: '#e74c3c', borderDash: [5, 5], pointRadius: 0, data: [] },
+            { label: '', borderColor: '#3498db', pointRadius: 0, data: [] }
+        ];
 
         updateCharti18n();
     }
@@ -261,12 +268,19 @@
         posChart.options.plugins.title.text = t.chartPosTitle;
         posChart.options.scales.y.title.text = t.chartPosY;
 
-        [vibChart, velChart, posChart].forEach(chart => {
+        [accelChart, velChart, posChart].forEach(chart => {
             chart.options.scales.x.title.text = t.chartTime;
-            chart.data.datasets[0].label = t.labelTrad;
-            chart.data.datasets[1].label = t.labelZVD;
+            chart.data.datasets[0].label = t.labelTradCmd;
+            chart.data.datasets[1].label = t.labelTradAct;
+            chart.data.datasets[2].label = t.labelZVDCmd;
+            chart.data.datasets[3].label = t.labelZVDAct;
             chart.update();
         });
+
+        vibChart.options.scales.x.title.text = t.chartTime;
+        vibChart.data.datasets[0].label = t.labelTrad;
+        vibChart.data.datasets[1].label = t.labelZVD;
+        vibChart.update();
     }
 
     function updateCharts() {
@@ -281,8 +295,8 @@
 
         updateChartData(accelChart, [modeData.raw.a_cmd, modeData.raw.a_act, modeData.zvd.a_cmd, modeData.zvd.a_act]);
         updateChartData(vibChart, [modeData.raw.y, modeData.zvd.y]);
-        updateChartData(velChart, [modeData.raw.v, modeData.zvd.v]);
-        updateChartData(posChart, [modeData.raw.p, modeData.zvd.p]);
+        updateChartData(velChart, [modeData.raw.v_cmd, modeData.raw.v_act, modeData.zvd.v_cmd, modeData.zvd.v_act]);
+        updateChartData(posChart, [modeData.raw.p_cmd, modeData.raw.p_act, modeData.zvd.p_cmd, modeData.zvd.p_act]);
     }
 
     function switchMode(mode) {
@@ -340,8 +354,8 @@
         ctx.fillStyle = '#2c3e50'; ctx.font = "18px Arial";
         ctx.fillText(`${tObj.canvasTime}: ${tStr.toFixed(2)} s`, 20, 30);
 
-        drawForkliftOverlay(modeData.raw.p[frameIdx], 200, modeData.raw.y[frameIdx], 'rgba(231, 76, 60, 0.8)', tObj.canvasTrad);
-        drawForkliftOverlay(modeData.zvd.p[frameIdx], 200, modeData.zvd.y[frameIdx], 'rgba(52, 152, 219, 0.8)', tObj.canvasZVD);
+        drawForkliftOverlay(modeData.raw.p_act[frameIdx], 180, modeData.raw.y[frameIdx], 'rgba(231, 76, 60, 0.8)', tObj.canvasTrad);
+        drawForkliftOverlay(modeData.zvd.p_act[frameIdx], 320, modeData.zvd.y[frameIdx], 'rgba(52, 152, 219, 0.8)', tObj.canvasZVD);
 
         if (isPlaying) {
             frameIdx++;

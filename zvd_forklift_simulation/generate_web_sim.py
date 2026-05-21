@@ -88,7 +88,7 @@ def generate_html():
 </head>
 <body>
 
-<h1>High-Reach Forklift ZVD Shaper Simulation</h1>
+<h1>High-Reach Forklift Simulation (PT1 Rigorous Physics)</h1>
 
 <div class="container">
     <div class="controls">
@@ -128,29 +128,67 @@ def generate_html():
     let accelChart, vibChart, velChart, posChart;
 
     function initCharts() {{
-        const createChart = (ctxId, title, yLabel) => {{
+        const createChart = (ctxId, title, yLabel, isAccel = false) => {{
             const ctx = document.getElementById(ctxId).getContext('2d');
+            let datasets = [];
+            if (isAccel) {{
+                datasets = [
+                    {{
+                        label: 'Trad. (Cmd)',
+                        borderColor: 'rgba(231, 76, 60, 0.3)',
+                        borderWidth: 2,
+                        borderDash: [2, 2],
+                        pointRadius: 0,
+                        data: []
+                    }},
+                    {{
+                        label: 'Trad. (Actual PT1)',
+                        borderColor: '#e74c3c',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        data: []
+                    }},
+                    {{
+                        label: 'ZVD (Cmd)',
+                        borderColor: 'rgba(52, 152, 219, 0.3)',
+                        borderWidth: 2,
+                        borderDash: [2, 2],
+                        pointRadius: 0,
+                        data: []
+                    }},
+                    {{
+                        label: 'ZVD (Actual PT1)',
+                        borderColor: '#3498db',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        data: []
+                    }}
+                ];
+            }} else {{
+                datasets = [
+                    {{
+                        label: 'Traditional (Raw)',
+                        borderColor: '#e74c3c',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        data: []
+                    }},
+                    {{
+                        label: 'ZVD Shaped',
+                        borderColor: '#3498db',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        data: []
+                    }}
+                ];
+            }}
+
             return new Chart(ctx, {{
                 type: 'line',
                 data: {{
                     labels: simData.t,
-                    datasets: [
-                        {{
-                            label: 'Traditional (Raw)',
-                            borderColor: '#e74c3c',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            data: []
-                        }},
-                        {{
-                            label: 'ZVD Shaped',
-                            borderColor: '#3498db',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            data: []
-                        }}
-                    ]
+                    datasets: datasets
                 }},
                 options: {{
                     responsive: true,
@@ -166,10 +204,10 @@ def generate_html():
             }});
         }};
 
-        accelChart = createChart('accelChart', 'Acceleration Command', 'Acceleration (m/s²)');
-        vibChart = createChart('vibChart', 'Cargo Vibration (Deflection)', 'Displacement (m)');
-        velChart = createChart('velChart', 'Forklift Velocity', 'Velocity (m/s)');
-        posChart = createChart('posChart', 'Forklift Position', 'Position (m)');
+        accelChart = createChart('accelChart', 'Acceleration Command vs. Actual Base Accel', 'Acceleration (m/s²)', true);
+        vibChart = createChart('vibChart', 'Cargo Vibration (Relative Deflection)', 'Displacement (m)');
+        velChart = createChart('velChart', 'Forklift Base Velocity', 'Velocity (m/s)');
+        posChart = createChart('posChart', 'Forklift Base Position', 'Position (m)');
 
         updateCharts();
     }}
@@ -177,8 +215,10 @@ def generate_html():
     function updateCharts() {{
         const modeData = simData[currentMode];
 
-        accelChart.data.datasets[0].data = modeData.raw.a;
-        accelChart.data.datasets[1].data = modeData.zvd.a;
+        accelChart.data.datasets[0].data = modeData.raw.a_cmd;
+        accelChart.data.datasets[1].data = modeData.raw.a_act;
+        accelChart.data.datasets[2].data = modeData.zvd.a_cmd;
+        accelChart.data.datasets[3].data = modeData.zvd.a_act;
         accelChart.update();
 
         vibChart.data.datasets[0].data = modeData.raw.y;
@@ -207,47 +247,6 @@ def generate_html():
     const ctx = canvas.getContext('2d');
     let frameIdx = 0;
 
-    function drawForklift(x, y, deflection, color, label) {{
-        const scale = 80; // pixels per meter
-        const baseX = 100 + x * scale;
-        const baseY = 350;
-
-        // Draw chassis
-        ctx.fillStyle = color;
-        ctx.fillRect(baseX - 40, baseY - 30, 80, 30);
-        // Wheels
-        ctx.fillStyle = '#333';
-        ctx.beginPath(); ctx.arc(baseX - 25, baseY, 10, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(baseX + 25, baseY, 10, 0, Math.PI*2); ctx.fill();
-
-        // Mast (10m scaled down slightly for visibility, let's say 250px)
-        const mastHeight = 250;
-        ctx.fillStyle = '#7f8c8d';
-        ctx.fillRect(baseX + 20, baseY - 30 - mastHeight, 10, mastHeight);
-
-        // Cargo with deflection
-        // Deflection is linear displacement relative to mast top
-        const cargoX = baseX + 20 + (deflection * scale * 2); // Exaggerate deflection for visual effect
-        const cargoY = baseY - 30 - mastHeight;
-
-        // Draw string/fork line
-        ctx.beginPath();
-        ctx.moveTo(baseX + 25, cargoY);
-        ctx.lineTo(cargoX + 5, cargoY + 20);
-        ctx.strokeStyle = '#95a5a6';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Draw Cargo (1 ton)
-        ctx.fillStyle = '#f39c12';
-        ctx.fillRect(cargoX - 15, cargoY + 20, 40, 40);
-
-        // Label
-        ctx.fillStyle = color;
-        ctx.font = "14px Arial";
-        ctx.fillText(label, baseX - 40, baseY + 30);
-    }}
-
     function drawFrame() {{
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -266,15 +265,9 @@ def generate_html():
         ctx.font = "18px Arial";
         ctx.fillText(`Time: ${{t.toFixed(2)}} s`, 20, 30);
 
-        // Draw Traditional (Top track / backgroundish or just side by side)
-        // Since it's 2D side view, we'll draw them on the same track but offset slightly visually,
-        // or just draw them overlapping with some transparency.
-        // Better: draw them top and bottom.
-
-        // Let's modify Y position to separate them
-        // Traditional
+        // Draw Traditional
         drawForkliftOverlay(modeData.raw.p[frameIdx], 200, modeData.raw.y[frameIdx], 'rgba(231, 76, 60, 0.8)', 'Traditional');
-        // ZVD
+        // Draw ZVD
         drawForkliftOverlay(modeData.zvd.p[frameIdx], 200, modeData.zvd.y[frameIdx], 'rgba(52, 152, 219, 0.8)', 'ZVD');
 
         if (isPlaying) {{
@@ -291,22 +284,19 @@ def generate_html():
         const scale = 80;
         const baseX = 100 + x * scale;
 
-        // Draw chassis
         ctx.fillStyle = color;
         ctx.fillRect(baseX - 40, baseY - 30, 80, 30);
 
-        // Wheels
         ctx.fillStyle = 'rgba(50,50,50,0.8)';
         ctx.beginPath(); ctx.arc(baseX - 25, baseY, 10, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(baseX + 25, baseY, 10, 0, Math.PI*2); ctx.fill();
 
-        // Mast
         const mastHeight = 150;
         ctx.fillStyle = color;
         ctx.fillRect(baseX + 20, baseY - 30 - mastHeight, 6, mastHeight);
 
-        // Cargo
-        const cargoX = baseX + 20 + (deflection * scale * 2); // Exaggerate
+        // Exaggerating deflection slightly for animation visibility
+        const cargoX = baseX + 20 + (deflection * scale * 2);
         const cargoY = baseY - 30 - mastHeight;
 
         ctx.beginPath();
@@ -319,7 +309,6 @@ def generate_html():
         ctx.fillStyle = color;
         ctx.fillRect(cargoX - 15, cargoY + 20, 30, 30);
 
-        // Label inside chassis
         ctx.fillStyle = 'white';
         ctx.font = "12px Arial";
         ctx.fillText(label, baseX - 30, baseY - 10);
@@ -340,7 +329,6 @@ def generate_html():
         drawFrame();
     }}
 
-    // Init
     window.onload = () => {{
         initCharts();
         drawFrame();

@@ -54,3 +54,14 @@ If you are implementing this in an industrial setting (e.g., Siemens S7-1500, Be
 3.  **Implement Delay Buffer**: In your PLC, instead of passing the raw joystick/trajectory acceleration directly to the motor, feed it into a FIFO buffer. Sum the current raw command scaled by $A_1$, the delayed command (by $t_2$) scaled by $A_2$, and the delayed command (by $t_3$) scaled by $A_3$.
 
 This will inherently smooth out the command and cancel out the mast vibration upon stopping.
+
+## 🔬 Rigorous Physics: The PT1 Motor Model
+
+The latest update introduces a highly realistic **First-Order Lag (PT1)** system to the physics engine.
+
+### Why is this important?
+Pure mathematical ZVD algorithms assume the forklift chassis can instantly achieve the commanded acceleration (a perfect step response). In the real world, servo motors, gearboxes, and rubber tires possess mechanical inertia and electrical delay.
+
+By passing the commanded acceleration through a PT1 filter ($G(s) = \frac{1}{T_m s + 1}$, with a time constant $T_m = 0.1s$), the simulation perfectly mimics how a real forklift smooths out harsh digital commands.
+
+You will see this reflected in the **"Acceleration Command vs. Actual Base Accel"** chart, where the solid lines (actual physical acceleration) lag slightly behind the dashed lines (digital command). Amazingly, because the system is linear and time-invariant, the ZVD algorithm commutes with the PT1 filter. The cargo vibration is still perfectly eliminated!

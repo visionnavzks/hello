@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPC Double Pendulum Game</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Cart-Double-Pole MPC Control Simulation</h1>
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="simCanvas" width="800" height="400"></canvas>
+            </div>
+
+            <div class="controls-panel">
+                <h2>Controls & Settings</h2>
+
+                <div class="control-group">
+                    <label class="switch">
+                        <input type="checkbox" id="mpcToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                    <span>Enable MPC</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="uMaxSlider">MPC Max Torque / Force Limit (Difficulty): <span id="uMaxVal">50</span> N</label>
+                    <input type="range" id="uMaxSlider" min="5" max="100" value="50" step="5">
+                </div>
+
+                <hr>
+
+                <h3>Apply Disturbances</h3>
+                <p>Click buttons to apply physical impulses to the cart or pendulums.</p>
+                <div class="btn-group">
+                    <button onclick="applyDisturbance(-2.0, 0, 0)">Cart Left &larr;</button>
+                    <button onclick="applyDisturbance(2.0, 0, 0)">Cart Right &rarr;</button>
+                </div>
+                <div class="btn-group">
+                    <button onclick="applyDisturbance(0, -1.0, 0)">Pole 1 Left &larr;</button>
+                    <button onclick="applyDisturbance(0, 1.0, 0)">Pole 1 Right &rarr;</button>
+                </div>
+                <div class="btn-group">
+                    <button onclick="applyDisturbance(0, 0, -1.5)">Pole 2 Left &larr;</button>
+                    <button onclick="applyDisturbance(0, 0, 1.5)">Pole 2 Right &rarr;</button>
+                </div>
+
+                <hr>
+
+                <div class="btn-group">
+                    <button class="danger" onclick="resetSim()">Reset Simulation</button>
+                </div>
+
+                <div class="telemetry">
+                    <h3>Telemetry</h3>
+                    <p>Current Force (U): <span id="uCurrent">0.00</span> N</p>
+                    <div class="u-bar-container">
+                        <div id="uBar" class="u-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

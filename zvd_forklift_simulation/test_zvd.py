@@ -110,8 +110,8 @@ class TestZVDSimulation(unittest.TestCase):
         amps = (0.2, 0.6, 0.2)
         times = (0.0, 0.4, 0.8)
 
-        shaper = ZVDRealtimeShaper(amps, times, dt)
-        stepped = np.array([shaper.step(sample) for sample in a_raw])
+        zvd_shaper = ZVDRealtimeShaper(amps, times, dt)
+        stepped = np.array([zvd_shaper.step(sample) for sample in a_raw])
         wrapped = apply_zvd_realtime(a_raw, dt, amps, times)
 
         np.testing.assert_allclose(stepped, wrapped)

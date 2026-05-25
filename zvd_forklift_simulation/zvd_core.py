@@ -150,10 +150,10 @@ class ZVDRealtimeShaper:
 
 def apply_zvd_realtime(a_raw, dt, amplitudes, times):
     """Applies ZVD shaping to an array using the realtime step-by-step implementation."""
-    shaper = ZVDRealtimeShaper(amplitudes, times, dt)
+    zvd_shaper = ZVDRealtimeShaper(amplitudes, times, dt)
     shaped = np.zeros_like(a_raw, dtype=float)
 
     for i, raw_sample in enumerate(a_raw):
-        shaped[i] = shaper.step(raw_sample)
+        shaped[i] = zvd_shaper.step(raw_sample)
 
     return shaped

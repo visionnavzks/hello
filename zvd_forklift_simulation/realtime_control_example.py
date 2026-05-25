@@ -16,11 +16,11 @@ def run_realtime_control_example():
     )
 
     amplitudes, times = calculate_zvd_parameters(fn=0.5, zeta=0.02)
-    shaper = ZVDRealtimeShaper(amplitudes, times, dt)
+    zvd_shaper = ZVDRealtimeShaper(amplitudes, times, dt)
 
     shaped_accel_cmd = np.zeros_like(raw_accel_cmd)
     for i, raw_sample in enumerate(raw_accel_cmd):
-        shaped_accel_cmd[i] = shaper.step(raw_sample)
+        shaped_accel_cmd[i] = zvd_shaper.step(raw_sample)
 
         # Replace this with your drive or PLC output write.
         # axis.set_acceleration_reference(shaped_accel_cmd[i])

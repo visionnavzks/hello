@@ -1,3 +1,5 @@
+from collections import deque
+
 import numpy as np
 
 def calculate_zvd_parameters(fn, zeta):
@@ -93,3 +95,65 @@ def apply_zvd(a_raw, t, amplitudes, times):
     a_zvd += A2 * np.interp(t - t2, t, a_raw, left=0)
     a_zvd += A3 * np.interp(t - t3, t, a_raw, left=0)
     return a_zvd
+
+
+class ZVDRealtimeShaper:
+    """Applies a ZVD shaper one sample at a time for fixed-rate control loops."""
+
+    def __init__(self, amplitudes, times, dt):
+        if dt <= 0:
+            raise ValueError("dt must be positive")
+
+        self.amplitudes = tuple(amplitudes)
+        self.times = tuple(times)
+        self.dt = float(dt)
+        self.delay_samples = tuple(delay / self.dt for delay in self.times)
+
+        history_len = int(np.ceil(max(self.delay_samples, default=0.0))) + 2
+        self._history = deque(maxlen=history_len)
+        self._sample_index = -1
+
+    def reset(self):
+        self._history.clear()
+        self._sample_index = -1
+
+    def step(self, raw_sample):
+        self._history.append(float(raw_sample))
+        self._sample_index += 1
+
+        shaped_sample = 0.0
+        for amplitude, delay in zip(self.amplitudes, self.delay_samples):
+            shaped_sample += amplitude * self._get_delayed_sample(delay)
+
+        return shaped_sample
+
+    def _get_delayed_sample(self, delay_samples):
+        if self._sample_index < delay_samples:
+            return 0.0
+
+        lower_delay = int(np.floor(delay_samples))
+        frac = delay_samples - lower_delay
+        newer_sample = self._sample_from_history(lower_delay)
+
+        if frac == 0.0:
+            return newer_sample
+
+        older_sample = self._sample_from_history(lower_delay + 1)
+        return frac * older_sample + (1.0 - frac) * newer_sample
+
+    def _sample_from_history(self, steps_back):
+        if steps_back >= len(self._history):
+            return 0.0
+
+        return self._history[-(steps_back + 1)]
+
+
+def apply_zvd_realtime(a_raw, dt, amplitudes, times):
+    """Applies ZVD shaping to an array using the realtime step-by-step implementation."""
+    shaper = ZVDRealtimeShaper(amplitudes, times, dt)
+    shaped = np.zeros_like(a_raw, dtype=float)
+
+    for i, raw_sample in enumerate(a_raw):
+        shaped[i] = shaper.step(raw_sample)
+
+    return shaped

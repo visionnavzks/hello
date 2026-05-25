@@ -16,7 +16,7 @@
         .params-form { display: flex; flex-wrap: wrap; gap: 15px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); justify-content: center; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #7f8c8d; }
-        .form-group input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+        .form-group input, .form-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 120px; }
         .controls { display: flex; justify-content: center; gap: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .action-btn { padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #3498db; color: white; transition: background-color 0.3s; }
         .action-btn:hover { background-color: #2980b9; }
@@ -68,6 +68,13 @@
             <label data-i18n="lblTm">PT1 Delay T_m</label>
             <input type="number" id="inp_Tm" value="0.1" step="0.05">
         </div>
+        <div class="form-group">
+            <label data-i18n="lblShaper">ZVD Mode</label>
+            <select id="inp_shaping_mode">
+                <option value="offline" data-i18n="optOffline">Offline shaping</option>
+                <option value="realtime" data-i18n="optRealtime">Realtime shaping</option>
+            </select>
+        </div>
         <div class="form-group" style="justify-content: flex-end;">
             <button id="btn-simulate" onclick="fetchSimulation()" data-i18n="btnCalc">Recalculate Dynamics</button>
         </div>
@@ -105,8 +112,12 @@
             lblVmax: 'V_max (m/s)',
             lblAmax: 'A_max (m/s²)',
             lblTm: 'PT1 Delay T_m',
+            lblShaper: 'ZVD mode',
+            optOffline: 'Offline shaping',
+            optRealtime: 'Realtime shaping',
             btnCalc: 'Recalculate Dynamics',
             msgLoading: 'Calculating physical simulation on the backend...',
+            msgFetchError: 'Error fetching simulation data',
             btnTrap: 'Trapezoidal Velocity',
             btnScurve: 'S-Curve Velocity',
             btnPlay: 'Play Animation',
@@ -138,8 +149,12 @@
             lblVmax: '最大速度 (m/s)',
             lblAmax: '最大加速度 (m/s²)',
             lblTm: '电机延迟 T_m (秒)',
+            lblShaper: 'ZVD 模式',
+            optOffline: '离线整形',
+            optRealtime: '实时整形',
             btnCalc: '重新计算动力学',
             msgLoading: '正在后端计算物理仿真数据...',
+            msgFetchError: '获取仿真数据失败',
             btnTrap: '梯形速度规划',
             btnScurve: 'S型速度规划',
             btnPlay: '播放动画',
@@ -317,7 +332,8 @@
             distance: parseFloat(document.getElementById('inp_distance').value),
             v_max: parseFloat(document.getElementById('inp_vmax').value),
             a_max: parseFloat(document.getElementById('inp_amax').value),
-            T_m: parseFloat(document.getElementById('inp_Tm').value)
+            T_m: parseFloat(document.getElementById('inp_Tm').value),
+            shaping_mode: document.getElementById('inp_shaping_mode').value
         };
 
         try {
@@ -326,11 +342,16 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            simData = await response.json();
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || i18n[currentLang].msgFetchError);
+            }
+
+            simData = result;
             updateCharts();
             drawFrame();
         } catch (error) {
-            alert('Error fetching simulation data');
+            alert(error.message || i18n[currentLang].msgFetchError);
         } finally {
             document.getElementById('loading').style.display = 'none';
         }

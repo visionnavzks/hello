@@ -1,6 +1,14 @@
 import unittest
 import numpy as np
-from zvd_core import calculate_zvd_parameters, generate_trapezoidal_velocity, generate_s_curve_velocity, apply_zvd
+from app import run_simulation
+from zvd_core import (
+    ZVDRealtimeShaper,
+    apply_zvd,
+    apply_zvd_realtime,
+    calculate_zvd_parameters,
+    generate_s_curve_velocity,
+    generate_trapezoidal_velocity,
+)
 
 class TestZVDSimulation(unittest.TestCase):
 
@@ -79,6 +87,47 @@ class TestZVDSimulation(unittest.TestCase):
         int_raw = np.trapezoid(a_raw, x=t)
         int_zvd = np.trapezoid(a_zvd, x=t)
         self.assertAlmostEqual(int_raw, int_zvd, places=2)
+
+    def test_apply_zvd_realtime_matches_offline(self):
+        t = np.arange(0, 5.0, 0.01)
+        a_raw = np.zeros_like(t)
+        a_raw[(t >= 1.0) & (t < 2.0)] = 1.0
+
+        amps = (0.25, 0.5, 0.25)
+        times = (0.0, 0.5, 1.0)
+
+        a_offline = apply_zvd(a_raw, t, amps, times)
+        a_realtime = apply_zvd_realtime(a_raw, t[1] - t[0], amps, times)
+
+        np.testing.assert_allclose(a_realtime, a_offline)
+
+    def test_realtime_shaper_step_matches_wrapper(self):
+        dt = 0.01
+        t = np.arange(0, 5.0, dt)
+        a_raw = np.zeros_like(t)
+        a_raw[(t >= 0.5) & (t < 1.5)] = 0.8
+
+        amps = (0.2, 0.6, 0.2)
+        times = (0.0, 0.4, 0.8)
+
+        shaper = ZVDRealtimeShaper(amps, times, dt)
+        stepped = np.array([shaper.step(sample) for sample in a_raw])
+        wrapped = apply_zvd_realtime(a_raw, dt, amps, times)
+
+        np.testing.assert_allclose(stepped, wrapped)
+
+    def test_run_simulation_supports_shaping_mode_selection(self):
+        args = (0.5, 0.02, 5.0, 1.0, 0.5, 0.1)
+
+        offline = run_simulation(*args, shaping_mode='offline')
+        realtime = run_simulation(*args, shaping_mode='realtime')
+
+        self.assertEqual(offline['shaping_mode'], 'offline')
+        self.assertEqual(realtime['shaping_mode'], 'realtime')
+        self.assertEqual(offline['t'], realtime['t'])
+
+        np.testing.assert_allclose(offline['trap']['zvd']['a_cmd'], realtime['trap']['zvd']['a_cmd'])
+        np.testing.assert_allclose(offline['scurve']['zvd']['a_cmd'], realtime['scurve']['zvd']['a_cmd'])
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,11 +1,26 @@
 from flask import Flask, render_template, request, jsonify
 import numpy as np
 from scipy.signal import lsim, StateSpace
-from zvd_core import calculate_zvd_parameters, generate_trapezoidal_velocity, generate_s_curve_velocity, apply_zvd
+from zvd_core import (
+    apply_zvd,
+    apply_zvd_realtime,
+    calculate_zvd_parameters,
+    generate_s_curve_velocity,
+    generate_trapezoidal_velocity,
+)
 
 app = Flask(__name__)
 
-def run_simulation(fn, zeta, distance, v_max, a_max, T_m):
+def shape_command(a_cmd, t, dt, amplitudes, times, shaping_mode):
+    if shaping_mode == 'offline':
+        return apply_zvd(a_cmd, t, amplitudes, times)
+    if shaping_mode == 'realtime':
+        return apply_zvd_realtime(a_cmd, dt, amplitudes, times)
+
+    raise ValueError(f"Unsupported shaping_mode: {shaping_mode}")
+
+
+def run_simulation(fn, zeta, distance, v_max, a_max, T_m, shaping_mode='offline'):
     # Cargo Setup
     omega_n = 2 * np.pi * fn
     A_cargo = [[0, 1], [-omega_n**2, -2*zeta*omega_n]]
@@ -35,11 +50,11 @@ def run_simulation(fn, zeta, distance, v_max, a_max, T_m):
     a_scurve_cmd, v_scurve_cmd, p_scurve_cmd = generate_s_curve_velocity(t, distance=distance, v_max=v_max, a_max=a_max)
 
     # Shaped commands
-    a_trap_zvd_cmd = apply_zvd(a_trap_cmd, t, amps, times)
+    a_trap_zvd_cmd = shape_command(a_trap_cmd, t, dt, amps, times, shaping_mode)
     v_trap_zvd_cmd = np.cumsum(a_trap_zvd_cmd) * dt
     p_trap_zvd_cmd = np.cumsum(v_trap_zvd_cmd) * dt
 
-    a_scurve_zvd_cmd = apply_zvd(a_scurve_cmd, t, amps, times)
+    a_scurve_zvd_cmd = shape_command(a_scurve_cmd, t, dt, amps, times, shaping_mode)
     v_scurve_zvd_cmd = np.cumsum(a_scurve_zvd_cmd) * dt
     p_scurve_zvd_cmd = np.cumsum(v_scurve_zvd_cmd) * dt
 
@@ -66,6 +81,7 @@ def run_simulation(fn, zeta, distance, v_max, a_max, T_m):
         return [round(float(val), 4) for val in arr[::skip]]
 
     return {
+        "shaping_mode": shaping_mode,
         "t": subsample(t),
         "trap": {
             "raw": {"a_cmd": subsample(a_trap_cmd), "a_act": subsample(a_trap_act),
@@ -95,15 +111,20 @@ def index():
 
 @app.route('/api/simulate', methods=['POST'])
 def api_simulate():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     fn = float(data.get('fn', 0.5))
     zeta = float(data.get('zeta', 0.02))
     distance = float(data.get('distance', 5.0))
     v_max = float(data.get('v_max', 1.0))
     a_max = float(data.get('a_max', 0.5))
     T_m = float(data.get('T_m', 0.1))
+    shaping_mode = str(data.get('shaping_mode', 'offline')).lower()
 
-    sim_data = run_simulation(fn, zeta, distance, v_max, a_max, T_m)
+    try:
+        sim_data = run_simulation(fn, zeta, distance, v_max, a_max, T_m, shaping_mode=shaping_mode)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
     return jsonify(sim_data)
 
 if __name__ == '__main__':

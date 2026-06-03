@@ -49,8 +49,36 @@ pip install -r requirements.txt
 
 ```bash
 pytest                          # unit + pipeline tests
-python demo/pipeline_demo.py    # writes demo/result.png
+python demo/pipeline_demo.py    # matplotlib demo -> demo/result.png
+python demo/web/app.py          # interactive web demo  -> http://127.0.0.1:5000
 ```
+
+## Web demo
+
+`demo/web/` is a small Flask app with a vanilla-JS + `<canvas>` frontend.
+The main canvas is fully interactive: click to draw obstacle polygons,
+drag the green/red start/goal markers, pick a footprint, then hit
+**Plan** to run the full pipeline.  The four small panels under the map
+show each pipeline stage; **Animate** plays the final SE(2) trajectory.
+
+Install the web dependency and start the server:
+
+```bash
+pip install -e .[web]           # or: pip install flask
+python demo/web/app.py          # -> http://127.0.0.1:5000
+```
+
+REST endpoints (also testable with `curl`):
+
+| Method | Path             | Purpose                                          |
+| ------ | ---------------- | ------------------------------------------------ |
+| GET    | `/`              | HTML page                                        |
+| GET    | `/api/health`    | `{ "ok": true, "version": "0.1.0" }`            |
+| GET    | `/api/presets`   | Built-in preset maps                             |
+| POST   | `/api/plan`      | Run the full pipeline, return all 4 stages + L1/L2/L3 |
+| POST   | `/api/footprint` | World-frame sample points of a footprint at a pose |
+
+See `tests/test_web_api.py` for the request/response schema.
 
 ## Configuration
 

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Motion Planner Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Motion Planner Demo</h1>
+    <div class="meta">
+      <span id="health-dot" class="dot dot-grey" title="server status"></span>
+      <span id="health-text">connecting…</span>
+    </div>
+  </header>
+
+  <section class="toolbar">
+    <div class="group">
+      <span class="label">Tool:</span>
+      <button class="tool active" data-tool="polygon">Add polygon</button>
+      <button class="tool"        data-tool="start">Move start</button>
+      <button class="tool"        data-tool="goal">Move goal</button>
+      <button class="tool"        data-tool="erase">Erase</button>
+    </div>
+
+    <div class="group">
+      <span class="label">Footprint:</span>
+      <select id="fp-shape">
+        <option value="rect" selected>rect</option>
+        <option value="circle">circle</option>
+      </select>
+      <label>W <input id="fp-w" type="number" step="0.05" min="0.05" value="0.40" /></label>
+      <label>H <input id="fp-h" type="number" step="0.05" min="0.05" value="0.20" /></label>
+      <label>R <input id="fp-r" type="number" step="0.05" min="0.05" value="0.20" /></label>
+    </div>
+
+    <div class="group">
+      <span class="label">Preset:</span>
+      <select id="preset-select">
+        <option value="">-- choose --</option>
+      </select>
+      <button id="btn-preset">Load</button>
+    </div>
+
+    <div class="group right">
+      <button id="btn-plan" class="primary">Plan</button>
+      <button id="btn-animate">Animate</button>
+      <button id="btn-stop">Stop</button>
+      <button id="btn-reset">Reset</button>
+    </div>
+  </section>
+
+  <main class="layout">
+    <div class="stage-pane">
+      <canvas id="main" width="900" height="640"></canvas>
+      <div class="hint" id="hint">
+        Click to place polygon vertices. Double-click (or press Enter) to close.
+      </div>
+    </div>
+
+    <aside class="side-pane">
+      <h3>Status</h3>
+      <table class="status">
+        <tr><th>L1</th><td id="st-l1">–</td></tr>
+        <tr><th>L2</th><td id="st-l2">–</td></tr>
+        <tr><th>L3</th><td id="st-l3">–</td></tr>
+        <tr><th>Length</th><td id="st-len">–</td></tr>
+        <tr><th>Time</th><td id="st-time">–</td></tr>
+      </table>
+      <h3>Legend</h3>
+      <ul class="legend">
+        <li><span class="swatch swatch-obstacle"></span>obstacle</li>
+        <li><span class="swatch swatch-start"></span>start</li>
+        <li><span class="swatch swatch-goal"></span>goal</li>
+        <li><span class="swatch swatch-astar"></span>A*</li>
+        <li><span class="swatch swatch-sc"></span>shortcut</li>
+        <li><span class="swatch swatch-smooth"></span>ESDF smooth</li>
+        <li><span class="swatch swatch-final"></span>final SE(2)</li>
+        <li><span class="swatch swatch-erase"></span>erase mode</li>
+      </ul>
+      <h3>Display</h3>
+      <label class="check"><input type="checkbox" id="show-astar" checked /> A* path</label>
+      <label class="check"><input type="checkbox" id="show-sc"    checked /> shortcut</label>
+      <label class="check"><input type="checkbox" id="show-sm"    checked /> smoothed XY</label>
+      <label class="check"><input type="checkbox" id="show-final" checked /> final SE(2)</label>
+      <label class="check"><input type="checkbox" id="show-fp"    checked /> robot footprint</label>
+    </aside>
+  </main>
+
+  <section class="stages">
+    <figure><figcaption>1. A*</figcaption><canvas class="stage" data-stage="astar" width="380" height="260"></canvas></figure>
+    <figure><figcaption>2. Shortcut</figcaption><canvas class="stage" data-stage="shortcut" width="380" height="260"></canvas></figure>
+    <figure><figcaption>3. ESDF smooth</figcaption><canvas class="stage" data-stage="smoothed" width="380" height="260"></canvas></figure>
+    <figure><figcaption>4. Final SE(2)</figcaption><canvas class="stage" data-stage="final" width="380" height="260"></canvas></figure>
+  </section>
+
+  <section class="log-section">
+    <h3>Log</h3>
+    <pre id="log"></pre>
+  </section>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

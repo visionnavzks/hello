@@ -75,24 +75,32 @@
         <li><span class="swatch swatch-goal"></span>goal</li>
         <li><span class="swatch swatch-astar"></span>A*</li>
         <li><span class="swatch swatch-sc"></span>shortcut</li>
+        <li><span class="swatch swatch-resample"></span>resampled</li>
         <li><span class="swatch swatch-smooth"></span>ESDF smooth</li>
+        <li><span class="swatch swatch-rs"></span>RS interp</li>
         <li><span class="swatch swatch-final"></span>final SE(2)</li>
         <li><span class="swatch swatch-erase"></span>erase mode</li>
       </ul>
       <h3>Display</h3>
+      <label class="check"><input type="checkbox" id="show-esdf"  checked /> ESDF heatmap</label>
       <label class="check"><input type="checkbox" id="show-astar" checked /> A* path</label>
       <label class="check"><input type="checkbox" id="show-sc"    checked /> shortcut</label>
+      <label class="check"><input type="checkbox" id="show-rs2"   checked /> resampled</label>
       <label class="check"><input type="checkbox" id="show-sm"    checked /> smoothed XY</label>
+      <label class="check"><input type="checkbox" id="show-rs"    checked /> RS interp</label>
       <label class="check"><input type="checkbox" id="show-final" checked /> final SE(2)</label>
       <label class="check"><input type="checkbox" id="show-fp"    checked /> robot footprint</label>
+      <label class="check"><input type="range" id="esdf-alpha" min="0" max="100" value="70" style="width:120px"/> heatmap alpha</label>
     </aside>
   </main>
 
   <section class="stages">
     <figure><figcaption>1. A*</figcaption><canvas class="stage" data-stage="astar" width="380" height="260"></canvas></figure>
     <figure><figcaption>2. Shortcut</figcaption><canvas class="stage" data-stage="shortcut" width="380" height="260"></canvas></figure>
-    <figure><figcaption>3. ESDF smooth</figcaption><canvas class="stage" data-stage="smoothed" width="380" height="260"></canvas></figure>
-    <figure><figcaption>4. Final SE(2)</figcaption><canvas class="stage" data-stage="final" width="380" height="260"></canvas></figure>
+    <figure><figcaption>3. Resampled</figcaption><canvas class="stage" data-stage="resampled" width="380" height="260"></canvas></figure>
+    <figure><figcaption>4. ESDF smooth</figcaption><canvas class="stage" data-stage="smoothed" width="380" height="260"></canvas></figure>
+    <figure><figcaption>5. RS interp</figcaption><canvas class="stage" data-stage="rs" width="380" height="260"></canvas></figure>
+    <figure><figcaption>6. Final SE(2)</figcaption><canvas class="stage" data-stage="final" width="380" height="260"></canvas></figure>
   </section>
 
   <section class="log-section">

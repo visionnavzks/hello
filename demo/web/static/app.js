@@ -36,9 +36,13 @@
 
   const showAstar = document.getElementById("show-astar");
   const showSC    = document.getElementById("show-sc");
+  const showRS2   = document.getElementById("show-rs2");
   const showSM    = document.getElementById("show-sm");
+  const showRS    = document.getElementById("show-rs");
   const showFinal = document.getElementById("show-final");
   const showFP    = document.getElementById("show-fp");
+  const showESDF  = document.getElementById("show-esdf");
+  const esdfAlpha = document.getElementById("esdf-alpha");
 
   // --------------------------------------------------------------- state
   const state = {
@@ -51,6 +55,8 @@
     drag: null,                         // null | "start" | "goal"
     result: null,                       // last plan() response
     animation: { active: false, t: 0, traj: null },
+    esdfCanvas: null,                   // off-screen heatmap canvas
+    esdfMax: 0,                         // max abs distance for colour scale
   };
 
   const MARKER_R = 9;          // px radius for start/goal hit test
@@ -160,6 +166,101 @@
     }
   }
 
+  // ----------------------------------------------------------- ESDF heatmap
+  // Build an off-screen canvas at the ESDF grid resolution and colour each
+  // cell by signed distance: free space goes red -> yellow -> green -> blue
+  // as you get further from obstacles; cells inside obstacles fade to dark
+  // red.  The canvas is rebuilt only when /api/plan returns new data.
+  function buildEsdfCanvas(esdf) {
+    if (!esdf || !esdf.values || !esdf.shape) return null;
+    const [nx, ny] = esdf.shape;
+    const vals = esdf.values;
+    if (vals.length !== nx * ny) return null;
+    // colour scale = max abs distance in the field, clamped to a sensible
+    // upper bound so far-away cells don't all collapse to the same blue
+    let maxAbs = 0;
+    for (let i = 0; i < vals.length; i++) {
+      const a = Math.abs(vals[i]);
+      if (a > maxAbs) maxAbs = a;
+    }
+    maxAbs = Math.max(0.1, Math.min(maxAbs, 2.0));
+    state.esdfMax = maxAbs;
+
+    const off = document.createElement("canvas");
+    off.width = nx;
+    off.height = ny;
+    const octx = off.getContext("2d");
+    const img = octx.createImageData(nx, ny);
+    for (let gy = 0; gy < ny; gy++) {
+      // flip Y so world +y is canvas up
+      const srcRow = ny - 1 - gy;
+      for (let gx = 0; gx < nx; gx++) {
+        const d = vals[srcRow * nx + gx];
+        const [r, g, b] = esdfColor(d, maxAbs);
+        const off4 = (gy * nx + gx) * 4;
+        img.data[off4 + 0] = r;
+        img.data[off4 + 1] = g;
+        img.data[off4 + 2] = b;
+        img.data[off4 + 3] = 255;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    return off;
+  }
+
+  function esdfColor(d, dmax) {
+    // d < 0 : inside obstacle, dark red -> red
+    // d > 0 : free space, red -> yellow -> green -> cyan -> blue
+    if (d <= 0) {
+      const t = Math.max(-1, d / dmax);     // -1 .. 0
+      const v = 60 + (255 - 60) * (1 + t);   // 60 (deep) .. 255 (boundary)
+      return [Math.round(v), 0, 0];
+    }
+    const t = Math.min(1, d / dmax);         // 0 .. 1
+    // hue 0 (red) -> 240 (blue) through 60 (yellow), 120 (green), 180 (cyan)
+    return hslToRgb(t * 240, 1.0, 0.5);
+  }
+
+  function hslToRgb(h, s, l) {
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h <  60) { r = c; g = x; }
+    else if (h < 120) { r = x; g = c; }
+    else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; }
+    else if (h < 300) { r = x; b = c; }
+    else              { r = c; b = x; }
+    return [
+      Math.round((r + m) * 255),
+      Math.round((g + m) * 255),
+      Math.round((b + m) * 255),
+    ];
+  }
+
+  function drawEsdfHeatmap(ctx, cv) {
+    if (!state.esdfCanvas || !state.result || !state.result.esdf) return;
+    if (!showESDF.checked) return;
+    const esdf = state.result.esdf;
+    const [exmin, eymin, exmax, eymax] = esdf.bounds;
+    // map ESDF bounds rectangle to canvas pixel rectangle in *world* space.
+    // The ESDF bounds and the canvas world bounds (state.bounds) are not
+    // guaranteed identical (the ESDF tightly hugs the map bounds, while
+    // state.bounds is the editor bounds).  Use worldToScreen for both
+    // corners so the heatmap lands exactly on the obstacles it represents.
+    const [sx0, sy1] = worldToScreen(exmin, eymin, cv);  // bottom-left world
+    const [sx1, sy0] = worldToScreen(exmax, eymax, cv);  // top-right world
+    const dw = sx1 - sx0;
+    const dh = sy1 - sy0;
+    const a = Number(esdfAlpha.value) / 100;
+    ctx.save();
+    ctx.globalAlpha = isFinite(a) ? a : 0.7;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(state.esdfCanvas, sx0, sy0, dw, dh);
+    ctx.restore();
+  }
+
   function drawPath(ctx, cv, points, color, width = 2) {
     if (!points || points.length < 2) return;
     ctx.strokeStyle = color;
@@ -171,6 +272,18 @@
       if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
     });
     ctx.stroke();
+  }
+
+  function drawPathWithDots(ctx, cv, points, color, width = 1.5, dotR = 2) {
+    if (!points || points.length < 1) return;
+    if (points.length >= 2) drawPath(ctx, cv, points, color, width);
+    ctx.fillStyle = color;
+    for (const [x, y] of points) {
+      const [sx, sy] = worldToScreen(x, y, cv);
+      ctx.beginPath();
+      ctx.arc(sx, sy, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   function drawTrajectory(ctx, cv, traj, color, width = 2.5) {
@@ -311,29 +424,35 @@
 
   function redrawMain() {
     drawWorld(mainCv, mainCtx);
-    drawObstacles(mainCv.getContext("2d"), mainCv);
+    const ctx = mainCv.getContext("2d");
+    drawEsdfHeatmap(ctx, mainCv);
+    drawObstacles(ctx, mainCv);
     if (state.result) {
-      const ctx = mainCv.getContext("2d");
       if (showAstar.checked) drawPath(ctx, mainCv, state.result.stages.raw_astar, "#d29922", 1.5);
       if (showSC.checked)    drawPath(ctx, mainCv, state.result.stages.shortcut, "#db61a2", 1.5);
+      if (showRS2.checked)   drawPathWithDots(ctx, mainCv, state.result.stages.resampled, "#ffa657", 1.5, 2);
       if (showSM.checked)    drawPath(ctx, mainCv, state.result.stages.smoothed_xy, "#58a6ff", 1.8);
+      if (showRS.checked)    drawTrajectory(ctx, mainCv, state.result.stages.rs, "#bc8cff", 1.8);
       if (showFinal.checked) drawTrajectory(ctx, mainCv, state.result.stages.final, "#a5d6ff", 2.5);
       if (showFP.checked)    drawFootprintSamples(ctx, mainCv);
     }
-    drawStartGoal(mainCv.getContext("2d"), mainCv);
-    drawDrawingPolygon(mainCv.getContext("2d"), mainCv);
-    drawAnimation(mainCv, mainCv.getContext("2d"));
+    drawStartGoal(ctx, mainCv);
+    drawDrawingPolygon(ctx, mainCv);
+    drawAnimation(mainCv, ctx);
   }
 
   function redrawStages() {
     const ctxMap = {
-      astar:    () => state.result ? state.result.stages.raw_astar : null,
-      shortcut: () => state.result ? state.result.stages.shortcut : null,
-      smoothed: () => state.result ? state.result.stages.smoothed_xy : null,
-      final:    () => state.result ? state.result.stages.final : null,
+      astar:     () => state.result ? state.result.stages.raw_astar : null,
+      shortcut:  () => state.result ? state.result.stages.shortcut : null,
+      resampled: () => state.result ? state.result.stages.resampled : null,
+      smoothed:  () => state.result ? state.result.stages.smoothed_xy : null,
+      rs:        () => state.result ? state.result.stages.rs : null,
+      final:     () => state.result ? state.result.stages.final : null,
     };
     const colorMap = {
-      astar: "#d29922", shortcut: "#db61a2", smoothed: "#58a6ff", final: "#a5d6ff",
+      astar: "#d29922", shortcut: "#db61a2", resampled: "#ffa657",
+      smoothed: "#58a6ff", rs: "#bc8cff", final: "#a5d6ff",
     };
     for (const cv of stageCvs) {
       const key = cv.dataset.stage;
@@ -342,15 +461,18 @@
       drawObstacles(ctx, cv);
       drawStartGoal(ctx, cv);
       const data = ctxMap[key]();
-      if (data && key === "final") {
+      if (!data) continue;
+      if (key === "final" || key === "rs") {
         drawTrajectory(ctx, cv, data, colorMap[key], 2);
-        if (showFP.checked) {
+        if (key === "final" && showFP.checked) {
           const stride = Math.max(1, Math.floor(data.length / 8));
           for (let i = 0; i < data.length; i += stride) {
             drawPoseFootprint(ctx, cv, data[i][0], data[i][1], data[i][2]);
           }
         }
-      } else if (data) {
+      } else if (key === "resampled") {
+        drawPathWithDots(ctx, cv, data, colorMap[key], 1.5, 2);
+      } else {
         drawPath(ctx, cv, data, colorMap[key], 2);
       }
     }
@@ -631,6 +753,7 @@
         return;
       }
       state.result = j;
+      state.esdfCanvas = buildEsdfCanvas(j.esdf);
       const finalPts = j.stages.final;
       const L = trajLength(finalPts);
       setStatus(j.validation.l1, j.validation.l2, j.validation.l3, L, j.elapsed_ms);
@@ -695,15 +818,17 @@
     state.polygons = [];
     state.draw.verts = []; state.draw.hover = null;
     state.result = null;
+    state.esdfCanvas = null;
     setStatus(null, null, null, null, null);
     redrawMain(); redrawStages();
     log("reset");
   });
 
   // ----------------------------------------------------------- misc ui
-  for (const el of [showAstar, showSC, showSM, showFinal, showFP]) {
+  for (const el of [showAstar, showSC, showRS2, showSM, showRS, showFinal, showFP, showESDF]) {
     el.addEventListener("change", () => { redrawMain(); redrawStages(); });
   }
+  esdfAlpha.addEventListener("input", () => redrawMain());
   for (const el of [fpShape, fpW, fpH, fpR]) {
     el.addEventListener("change", () => {
       if (state.result) redrawMain();

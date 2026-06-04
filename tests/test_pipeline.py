@@ -29,6 +29,24 @@ def test_pipeline_open_field_circle():
                                [-2, -2], atol=0.2)
     np.testing.assert_allclose(r.final_trajectory.poses[-1, :2],
                                [2, 2], atol=0.2)
+    # resample stage is present and densifies the shortcut output
+    assert len(r.resampled) >= len(r.shortcut)
+    # rs_trajectory is exposed
+    assert r.rs_trajectory.poses.shape[1] == 3
+    assert len(r.rs_trajectory) >= 2
+
+
+def test_pipeline_resampled_spacing_matches_cfg():
+    cfg = default_config()
+    cfg.resample_step = 0.15
+    spec = MapSpec(polygons=[], bounds=(-3, -3, 3, 3))
+    fp = CircleFootprint(0.2)
+    p = HierarchicalPlanner(spec, fp, cfg)
+    r = p.plan(Pose2D(-2, 0.0, 0.0), Pose2D(2, 0.0, 0.0))
+    segs = np.linalg.norm(np.diff(r.resampled.points, axis=0), axis=1)
+    assert len(segs) >= 2
+    # uniform spacing close to the configured step
+    np.testing.assert_allclose(segs, 0.15, atol=0.05)
 
 
 def test_pipeline_with_corridor_obstacles():

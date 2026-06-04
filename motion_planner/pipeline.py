@@ -1,15 +1,16 @@
 """Convenience facade for the full pipeline.
 
-Composes the seven planning modules into a single ``plan(...)`` call so
+Composes the eight planning modules into a single ``plan(...)`` call so
 callers (and tests) can run the entire hierarchy in one go:
 
     1. Build ESDF
     2. A*  (centre path)
     3. Shortcut
-    4. ESDF gradient XY smoother
-    5. Reeds-Shepp / Dubins planner
-    6. SE(2) smoother
-    7. 3-level validator (with one pass of local repair on failure)
+    4. Uniform arc-length resample (cfg.resample_step)
+    5. ESDF gradient XY smoother
+    6. Reeds-Shepp / Dubins planner
+    7. SE(2) smoother
+    8. 3-level validator (with one pass of local repair on failure)
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from .config import PlannerConfig, default_config
 from .esdf import ESDF
 from .esdf_smoother import ESDFSmoother
 from .footprint import Footprint
+from .resample import Resampler
 from .rs_planner import RSPlanner
 from .se2_smoother import SE2Smoother
 from .shortcut import ShortcutSmoother
@@ -35,6 +37,7 @@ from .validator import TrajValidator, ValidationResult
 class PipelineResult:
     raw_astar: Path
     shortcut: Path
+    resampled: Path
     smoothed_xy: Path
     rs_trajectory: SE2Trajectory
     final_trajectory: SE2Trajectory
@@ -44,7 +47,7 @@ class PipelineResult:
 
 
 class HierarchicalPlanner:
-    """Composes the seven planning modules into a single call."""
+    """Composes the eight planning modules into a single call."""
 
     def __init__(
         self,
@@ -58,6 +61,7 @@ class HierarchicalPlanner:
         self.radius = footprint.bounding_radius()
         self.astar = AStar2D(self.esdf, self.radius, self.cfg)
         self.shortcut = ShortcutSmoother(self.esdf, footprint, self.cfg)
+        self.resampler = Resampler(self.cfg)
         self.xy_smooth = ESDFSmoother(self.esdf, self.radius, self.cfg)
         self.rs = RSPlanner(self.esdf, self.radius, self.cfg)
         self.se2 = SE2Smoother(self.esdf, self.radius, self.cfg)
@@ -73,17 +77,20 @@ class HierarchicalPlanner:
         raw = self.astar.plan((start.x, start.y), (goal.x, goal.y))
         # 2) Shortcut
         sc = self.shortcut.smooth(raw)
-        # 3) ESDF gradient smoother
-        smoothed = self.xy_smooth.smooth(sc)
-        # 4) RS / Dubins
+        # 3) Uniform arc-length resample (densify shortcut output so the
+        #    smoother has enough degrees of freedom on every segment)
+        rs_in = self.resampler.resample(sc)
+        # 4) ESDF gradient smoother
+        smoothed = self.xy_smooth.smooth(rs_in)
+        # 5) RS / Dubins
         rs_traj = self.rs.plan(start, goal, smoothed)
-        # 5) SE(2) smoother
+        # 6) SE(2) smoother
         final = self.se2.smooth(rs_traj)
-        # 6) 3-level validator
+        # 7) 3-level validator
         l1 = self.validator.validate_l1(smoothed)
         l2 = self.validator.validate_l2(rs_traj)
         l3 = self.validator.validate_l3(final)
-        # 7) local repair on L3 failure
+        # 8) local repair on L3 failure
         if not l3.ok:
             for _ in range(self.cfg.validator_local_repair_iters):
                 final = self.se2.smooth(final)
@@ -93,6 +100,7 @@ class HierarchicalPlanner:
         return PipelineResult(
             raw_astar=raw,
             shortcut=sc,
+            resampled=rs_in,
             smoothed_xy=smoothed,
             rs_trajectory=rs_traj,
             final_trajectory=final,

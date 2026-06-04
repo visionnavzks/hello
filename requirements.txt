@@ -2,4 +2,5 @@ numpy>=2.0
 scipy>=1.10
 shapely>=2.0
 matplotlib>=3.7
+casadi>=3.6
 pytest>=7.0

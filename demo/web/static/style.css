@@ -99,7 +99,9 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .swatch-goal     { background: #f85149; height: 12px; width: 12px; border-radius: 50%; }
 .swatch-astar    { background: #d29922; }
 .swatch-sc       { background: #db61a2; }
+.swatch-resample { background: #ffa657; }
 .swatch-smooth   { background: #58a6ff; }
+.swatch-rs       { background: #bc8cff; }
 .swatch-final    { background: #a5d6ff; height: 4px; }
 .swatch-erase    { background: #f85149; height: 12px; width: 12px; border-radius: 50%; }
 .check { display: block; font-size: 12px; color: #c9d1d9; padding: 2px 0; }
@@ -107,7 +109,7 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 /* ---------- stage panels ---------- */
 .stages {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 10px;
   padding: 0 16px 12px;
 }

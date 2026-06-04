@@ -12,6 +12,7 @@ dependencies = [
     "scipy>=1.10",
     "shapely>=2.0",
     "matplotlib>=3.7",
+    "casadi>=3.6",
 ]
 
 [project.optional-dependencies]

@@ -239,6 +239,46 @@ def rs_interpolate(start: Pose2D, goal: Pose2D, radius: float,
     return SE2Trajectory(np.column_stack([xs, ys, hs]))
 
 
+# ------------------------------------------------- polyline arc-length
+def _arclength_point(pts: np.ndarray, cum: np.ndarray, s: float):
+    """Return ``(xy, seg_idx, local_t)`` of the point on polyline
+    ``pts`` at arc length ``s`` from ``pts[0]``.  ``s`` is clamped to
+    ``[0, cum[-1]]``.  ``seg_idx`` is the segment index
+    (``pts[seg_idx] -> pts[seg_idx + 1]``) the point lies on; callers
+    use it to read the segment tangent."""
+    if len(pts) < 2:
+        return pts[0].astype(float).copy(), 0, 0.0
+    total = float(cum[-1])
+    s = max(0.0, min(s, total))
+    if s >= total:
+        return pts[-1].astype(float).copy(), len(pts) - 2, 1.0
+    idx = int(np.searchsorted(cum, s) - 1)
+    idx = max(0, min(idx, len(pts) - 2))
+    s0 = float(cum[idx])
+    s1 = float(cum[idx + 1])
+    ds = s1 - s0
+    f = 0.0 if ds < 1e-9 else (s - s0) / ds
+    xy = pts[idx] * (1.0 - f) + pts[idx + 1] * f
+    return xy.astype(float), idx, f
+
+
+def _local_tangent(pts: np.ndarray, seg_idx: int) -> float:
+    """atan2 tangent of segment ``(seg_idx, seg_idx + 1)`` in
+    ``pts``.  ``seg_idx`` is clamped to the valid range so an
+    out-of-range input (e.g. the last segment after a clamp) still
+    returns a finite heading."""
+    if len(pts) < 2:
+        return 0.0
+    i = max(0, min(seg_idx, len(pts) - 2))
+    d = pts[i + 1] - pts[i]
+    if np.linalg.norm(d) < 1e-9:
+        if i + 2 < len(pts):
+            d = pts[i + 2] - pts[i + 1]
+        elif i - 1 >= 0:
+            d = pts[i] - pts[i - 1]
+    return math.atan2(float(d[1]), float(d[0]))
+
+
 # ----------------------------------------------------------- planner
 class RSPlanner:
     """Adaptive-anchor Dubins planner with heading relaxation.
@@ -269,19 +309,21 @@ class RSPlanner:
         goal: Pose2D,
         ref_xy: Path,
     ) -> SE2Trajectory:
-        anchors_xy = self._adaptive_anchors(start, goal, ref_xy)
+        anchors_xy, lookahead_tangents = self._adaptive_anchors(
+            start, goal, ref_xy)
         n = len(anchors_xy)
-        # thetas[k] is the heading AT anchor k (n elements)
-        tangents = [
-            math.atan2(anchors_xy[k, 1] - anchors_xy[k - 1, 1],
-                       anchors_xy[k, 0] - anchors_xy[k - 1, 0])
-            for k in range(1, n)
-        ]
-        # force the first and last headings to match start/goal
+        # thetas[k] is the heading AT anchor k (n elements).
+        # Default = tangent of the (k-1, k) segment.  P_s and P_g (the
+        # lookahead anchors) override this with the local tangent of
+        # ref_xy at that arc length so the first/last segment knows the
+        # direction the path is actually going.
         thetas = np.zeros(n, dtype=float)
         thetas[0] = start.theta
-        for i, t in enumerate(tangents[:-1], start=1):
-            thetas[i] = t
+        for k in range(1, n):
+            thetas[k] = math.atan2(anchors_xy[k, 1] - anchors_xy[k - 1, 1],
+                                   anchors_xy[k, 0] - anchors_xy[k - 1, 0])
+        for k, t in lookahead_tangents.items():
+            thetas[k] = t
         thetas[-1] = goal.theta
         thetas = self._relax_headings(anchors_xy, thetas)
 
@@ -304,48 +346,92 @@ class RSPlanner:
 
     # --------------------------------------------------------- anchors
     def _adaptive_anchors(self, start: Pose2D, goal: Pose2D,
-                          ref_xy: Path) -> np.ndarray:
-        # Always start and end at the actual start/goal positions.
+                          ref_xy: Path) -> Tuple[np.ndarray, dict]:
+        """Build the anchor polyline and per-anchor tangent hints.
+
+        Returns
+        -------
+        anchors : (N, 2) float array
+            Polyline ``[start.xy, P_s, ..., P_g, goal.xy]`` where
+            ``P_s`` / ``P_g`` are points on ``ref_xy`` at arc length
+            ``L_lookahead`` from the start / goal ends, taken so the
+            first and last Dubins segments have enough room to turn.
+        lookahead_tangents : dict[int, float]
+            Heading hints for the ``P_s`` and ``P_g`` anchors (the
+            local tangent of ``ref_xy`` at that arc length), consumed
+            by :meth:`plan` to set the default heading for those
+            anchors before :meth:`_relax_headings` softens them.
+        """
         pts = ref_xy.points
         if len(pts) < 2:
-            return np.array([[start.x, start.y], [goal.x, goal.y]])
-        # Replace first/last of ref_xy with actual start/goal for length
-        # computation, then re-insert them as anchor endpoints.
-        inner = pts[1:-1]
-        if len(inner) <= 1:
-            # not enough interior points for adaptive spacing; fall back
-            # to just start, an interpolated midpoint, and goal
-            d = math.hypot(goal.x - start.x, goal.y - start.y)
-            n_extra = max(int(d / self.cfg.rs_anchor_spacing),
-                          self.cfg.rs_anchor_min - 2)
-            n_extra = max(n_extra, 0)
-            targets = np.linspace(0.0, 1.0, n_extra + 2)
-            anchors = []
-            for t in targets:
-                anchors.append(np.array([
-                    start.x + t * (goal.x - start.x),
-                    start.y + t * (goal.y - start.y),
-                ]))
-            return np.array(anchors)
-        segs = np.linalg.norm(np.diff(inner, axis=0), axis=1)
+            return (np.array([[start.x, start.y], [goal.x, goal.y]]), {})
+        if len(pts) == 2 or np.linalg.norm(pts[1] - pts[0]) < 1e-9:
+            # not enough interior points to do a lookahead
+            return self._anchors_line_fallback(start, goal)
+        segs = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+        if not np.any(segs > 1e-9):
+            return self._anchors_line_fallback(start, goal)
         cum = np.concatenate([[0.0], np.cumsum(segs)])
-        total = cum[-1]
-        # adaptive spacing along the interior
-        n_extra = max(int(total / self.cfg.rs_anchor_spacing),
+        total = float(cum[-1])
+        cfg = self.cfg
+
+        # effective lookahead, clamped for very short paths
+        L = cfg.rs_lookahead_dist
+        L_min = max(total * cfg.rs_lookahead_min_frac,
+                    cfg.rs_anchor_spacing * 0.5)
+        L = min(L, L_min)
+        L = max(L, 1e-3)
+        if total <= 2.0 * L + 1e-3:
+            # not enough room for a 2-sided lookahead; fall back to a
+            # straight start->goal line so the planner still produces
+            # a trajectory
+            return self._anchors_line_fallback(start, goal)
+
+        s_s = L
+        s_g = total - L
+
+        P_s, seg_s, _ = _arclength_point(pts, cum, s_s)
+        P_g, seg_g, _ = _arclength_point(pts, cum, s_g)
+
+        # interior anchors: re-sample ref_xy between (s_s, s_g) at the
+        # adaptive spacing
+        inner_total = s_g - s_s
+        n_extra = max(int(inner_total / cfg.rs_anchor_spacing),
+                      cfg.rs_anchor_min - 4)
+        n_extra = max(n_extra, 0)
+        targets = np.linspace(s_s, s_g, n_extra + 2)[1:-1]
+        inner_anchors: List[np.ndarray] = []
+        for t in targets:
+            p, _, _ = _arclength_point(pts, cum, float(t))
+            inner_anchors.append(p)
+
+        anchors_list: List[np.ndarray] = [
+            np.array([start.x, start.y], dtype=float),
+            P_s,
+            *inner_anchors,
+            P_g,
+            np.array([goal.x, goal.y], dtype=float),
+        ]
+        anchors_xy = np.array(anchors_list)
+        lookahead_tangents = {
+            1: _local_tangent(pts, seg_s),
+            len(anchors_xy) - 2: _local_tangent(pts, seg_g),
+        }
+        return anchors_xy, lookahead_tangents
+
+    def _anchors_line_fallback(self, start: Pose2D,
+                               goal: Pose2D) -> Tuple[np.ndarray, dict]:
+        d = math.hypot(goal.x - start.x, goal.y - start.y)
+        n_extra = max(int(d / self.cfg.rs_anchor_spacing),
                       self.cfg.rs_anchor_min - 2)
         n_extra = max(n_extra, 0)
-        targets = np.linspace(0.0, total, n_extra + 2)
-        anchors = [np.array([start.x, start.y])]
-        for t in targets[1:-1]:
-            idx = int(np.searchsorted(cum, t) - 1)
-            idx = max(0, min(idx, len(inner) - 2))
-            s = cum[idx]
-            ds = cum[idx + 1] - s
-            f = 0.0 if ds < 1e-9 else (t - s) / ds
-            a = inner[idx] * (1.0 - f) + inner[idx + 1] * f
-            anchors.append(a)
-        anchors.append(np.array([goal.x, goal.y]))
-        return np.array(anchors)
+        targets = np.linspace(0.0, 1.0, n_extra + 2)
+        anchors = [
+            np.array([start.x + t * (goal.x - start.x),
+                      start.y + t * (goal.y - start.y)], dtype=float)
+            for t in targets
+        ]
+        return np.array(anchors), {}
 
     def _relax_headings(self, anchors: np.ndarray,
                         thetas: np.ndarray) -> np.ndarray:

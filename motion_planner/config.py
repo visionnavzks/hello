@@ -31,6 +31,18 @@ class PlannerConfig:
     shortcut_random_frac: float = 0.5
     shortcut_coarse_margin: float = 0.03     # extra slack for circle check
 
+    # --- Resample (between Shortcut and ESDF smoother) --------------------
+    resample_step: float = 0.15              # m: uniform arc-length spacing
+                                              # of waypoints fed into the
+                                              # ESDF gradient smoother.
+                                              # 0.15 densifies enough for
+                                              # the smoother to bend around
+                                              # tight corners without giving
+                                              # it so many degrees of
+                                              # freedom that the curvature
+                                              # term lets the path clip
+                                              # obstacle corners.
+
     # --- ESDF gradient smoother (XY) ---------------------------------------
     smooth_w_smooth: float = 1.0              # curvature of polyline
     smooth_w_obs: float = 5.0                # ESDF repulsion
@@ -47,6 +59,17 @@ class PlannerConfig:
     rs_anchor_min: int = 3                   # at least N anchors per segment
     rs_step: float = 0.05                    # sampling step on the RS arc
     rs_use_dubins_straight: bool = True
+    rs_lookahead_dist: float = 0.45          # arc length from start/goal
+                                              # along smoothed_xy where the
+                                              # first/last Dubins anchor
+                                              # P_s / P_g is placed, so that
+                                              # the first/last segment has
+                                              # room to turn without forcing
+                                              # an awkward short arc
+    rs_lookahead_min_frac: float = 0.20      # if total path arc length is
+                                              # too short for 2*lookahead,
+                                              # clamp each lookahead to this
+                                              # fraction of total
 
     # --- SE(2) smoother ----------------------------------------------------
     se2_w_smooth: float = 1.0

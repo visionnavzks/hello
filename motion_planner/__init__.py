@@ -21,6 +21,8 @@ __all__ = [
     "RectFootprint",
     "AStar2D",
     "ShortcutSmoother",
+    "Resampler",
+    "resample_path",
     "ESDFSmoother",
     "RSPlanner",
     "SE2Smoother",
@@ -52,6 +54,9 @@ def __getattr__(name: str) -> Any:
     if name == "ShortcutSmoother":
         from .shortcut import ShortcutSmoother
         return ShortcutSmoother
+    if name in ("Resampler", "resample_path"):
+        from . import resample as _r
+        return getattr(_r, name)
     if name == "ESDFSmoother":
         from .esdf_smoother import ESDFSmoother
         return ESDFSmoother

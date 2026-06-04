@@ -221,7 +221,9 @@ def _trivial_result(start: Pose2D, goal: Pose2D, fp) -> Dict[str, Any]:
         "stages": {
             "raw_astar":   [[start.x, start.y], [goal.x, goal.y]],
             "shortcut":    [[start.x, start.y], [goal.x, goal.y]],
+            "resampled":   [[start.x, start.y], [goal.x, goal.y]],
             "smoothed_xy": [[start.x, start.y], [goal.x, goal.y]],
+            "rs":          [single, single],
             "final":       [single, single],
         },
         "validation": {
@@ -258,6 +260,30 @@ def _path_to_list(p: Path) -> List[List[float]]:
 
 def _traj_to_list(t: SE2Trajectory) -> List[List[float]]:
     return t.poses.tolist()
+
+
+def _esdf_to_dict(esdf) -> Dict[str, Any]:
+    """Downsample-aware ESDF serialisation for the heatmap overlay.
+
+    The full ESDF grid can be tens of thousands of cells; we cap the
+    payload at roughly 200x200 (~40k floats, <200KB JSON) by integer
+    striding when needed so the response stays snappy.
+    """
+    field = esdf.field
+    ny, nx = field.shape
+    max_dim = 220
+    sy = max(1, int(np.ceil(ny / max_dim)))
+    sx = max(1, int(np.ceil(nx / max_dim)))
+    sub = field[::sy, ::sx]
+    return {
+        "bounds": list(esdf.bounds),
+        "resolution": float(esdf.resolution),
+        "stride": [int(sx), int(sy)],
+        "shape": [int(sub.shape[1]), int(sub.shape[0])],   # [nx, ny]
+        # round to 4 decimals to shrink JSON size; precision is plenty
+        # for a colormap lookup
+        "values": np.round(sub.astype(float), 4).flatten().tolist(),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -303,10 +329,13 @@ def plan():
         return jsonify({
             "ok": True,
             "elapsed_ms": dt_ms,
+            "esdf": _esdf_to_dict(planner.esdf),
             "stages": {
                 "raw_astar":   _path_to_list(result.raw_astar),
                 "shortcut":    _path_to_list(result.shortcut),
+                "resampled":   _path_to_list(result.resampled),
                 "smoothed_xy": _path_to_list(result.smoothed_xy),
+                "rs":          _traj_to_list(result.rs_trajectory),
                 "final":       _traj_to_list(result.final_trajectory),
             },
             "validation": {

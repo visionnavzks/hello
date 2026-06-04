@@ -73,10 +73,17 @@ def test_plan_open_field(client):
     assert r.status_code == 200, r.data
     j = r.get_json()
     assert j["ok"] is True
-    # all four stages are present and non-empty
-    for key in ("raw_astar", "shortcut", "smoothed_xy", "final"):
+    # all six stages are present and non-empty
+    for key in ("raw_astar", "shortcut", "resampled", "smoothed_xy",
+                "rs", "final"):
         pts = j["stages"][key]
         assert isinstance(pts, list) and len(pts) >= 2
+    # ESDF payload included for the heatmap overlay
+    assert "esdf" in j
+    esdf = j["esdf"]
+    assert {"bounds", "resolution", "stride", "shape", "values"} <= set(esdf)
+    nx, ny = esdf["shape"]
+    assert len(esdf["values"]) == nx * ny
     # all three validation levels
     for k in ("l1", "l2", "l3"):
         assert k in j["validation"]
@@ -140,7 +147,8 @@ def test_plan_start_equals_goal(client):
     assert r.status_code == 200
     j = r.get_json()
     assert j["ok"] is True
-    for k in ("raw_astar", "shortcut", "smoothed_xy", "final"):
+    for k in ("raw_astar", "shortcut", "resampled", "smoothed_xy",
+              "rs", "final"):
         # 2 points: start and goal (which are the same)
         assert len(j["stages"][k]) == 2
     assert j["validation"]["l3"]["ok"] is True

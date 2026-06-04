@@ -52,6 +52,19 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
   border-radius: 4px; padding: 3px 6px; font-size: 12px;
 }
 .toolbar label { color: #8b949e; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.toolbar input[type="range"] {
+  width: 90px;
+  vertical-align: middle;
+  accent-color: #1f6feb;
+}
+.toolbar .theta-label { gap: 4px; }
+.toolbar .theta-val {
+  display: inline-block;
+  min-width: 38px;
+  text-align: right;
+  font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #c9d1d9;
+}
 
 /* ---------- main layout ---------- */
 .layout {

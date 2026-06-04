@@ -19,8 +19,7 @@
     <div class="group">
       <span class="label">Tool:</span>
       <button class="tool active" data-tool="polygon">Add polygon</button>
-      <button class="tool"        data-tool="start">Move start</button>
-      <button class="tool"        data-tool="goal">Move goal</button>
+      <button class="tool"        data-tool="move">Move</button>
       <button class="tool"        data-tool="erase">Erase</button>
     </div>
 
@@ -33,6 +32,18 @@
       <label>W <input id="fp-w" type="number" step="0.05" min="0.05" value="0.40" /></label>
       <label>H <input id="fp-h" type="number" step="0.05" min="0.05" value="0.20" /></label>
       <label>R <input id="fp-r" type="number" step="0.05" min="0.05" value="0.20" /></label>
+    </div>
+
+    <div class="group">
+      <span class="label">Heading θ:</span>
+      <label class="theta-label">S
+        <input id="start-theta" type="range" min="-180" max="180" step="1" value="0" />
+        <span id="start-theta-val" class="theta-val">0°</span>
+      </label>
+      <label class="theta-label">G
+        <input id="goal-theta" type="range" min="-180" max="180" step="1" value="0" />
+        <span id="goal-theta-val" class="theta-val">0°</span>
+      </label>
     </div>
 
     <div class="group">

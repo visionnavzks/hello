@@ -34,6 +34,11 @@
   const fpR     = document.getElementById("fp-r");
   const presetSelect = document.getElementById("preset-select");
 
+  const startTheta    = document.getElementById("start-theta");
+  const startThetaVal = document.getElementById("start-theta-val");
+  const goalTheta     = document.getElementById("goal-theta");
+  const goalThetaVal  = document.getElementById("goal-theta-val");
+
   const showAstar = document.getElementById("show-astar");
   const showSC    = document.getElementById("show-sc");
   const showRS2   = document.getElementById("show-rs2");
@@ -543,6 +548,23 @@
     return Math.hypot(sx, sy);  // used in pointerPos comparison
   }
 
+  function nearestPose(p) {
+    const [sx0, sy0] = worldToScreen(state.start.x, state.start.y, mainCv);
+    const [sx1, sy1] = worldToScreen(state.goal.x,  state.goal.y,  mainCv);
+    const d0 = Math.hypot(p.sx - sx0, p.sy - sy0);
+    const d1 = Math.hypot(p.sx - sx1, p.sy - sy1);
+    return d0 <= d1
+      ? { name: "start", dist: d0 }
+      : { name: "goal",  dist: d1 };
+  }
+
+  function movePoseTo(name, wx, wy) {
+    state[name].x = wx; state[name].y = wy;
+    state.result = null;
+    setStatus(null, null, null, null, null);
+    redrawMain(); redrawStages();
+  }
+
   mainCv.addEventListener("mousedown", (ev) => {
     const p = pointerPos(ev);
     if (state.tool === "polygon") {
@@ -550,30 +572,12 @@
       redrawMain();
       return;
     }
-    if (state.tool === "start") {
-      // start drag if click is near start
-      const [sx, sy] = worldToScreen(state.start.x, state.start.y, mainCv);
-      if (Math.hypot(p.sx - sx, p.sy - sy) <= DRAG_R) {
-        state.drag = "start";
-      } else {
-        // or move it to the click position
-        state.start.x = p.world[0]; state.start.y = p.world[1];
-        state.result = null;
-        setStatus(null, null, null, null, null);
-        redrawMain(); redrawStages();
-      }
-      return;
-    }
-    if (state.tool === "goal") {
-      const [sx, sy] = worldToScreen(state.goal.x, state.goal.y, mainCv);
-      if (Math.hypot(p.sx - sx, p.sy - sy) <= DRAG_R) {
-        state.drag = "goal";
-      } else {
-        state.goal.x = p.world[0]; state.goal.y = p.world[1];
-        state.result = null;
-        setStatus(null, null, null, null, null);
-        redrawMain(); redrawStages();
-      }
+    if (state.tool === "move") {
+      // pick the closest marker; if the click lands inside its drag radius,
+      // begin a drag, otherwise teleport it to the click.
+      const m = nearestPose(p);
+      state.drag = m.name;
+      if (m.dist > DRAG_R) movePoseTo(m.name, p.world[0], p.world[1]);
       return;
     }
     if (state.tool === "erase") {
@@ -593,18 +597,8 @@
 
   mainCv.addEventListener("mousemove", (ev) => {
     const p = pointerPos(ev);
-    if (state.drag === "start") {
-      state.start.x = p.world[0]; state.start.y = p.world[1];
-      state.result = null;
-      setStatus(null, null, null, null, null);
-      redrawMain(); redrawStages();
-      return;
-    }
-    if (state.drag === "goal") {
-      state.goal.x = p.world[0]; state.goal.y = p.world[1];
-      state.result = null;
-      setStatus(null, null, null, null, null);
-      redrawMain(); redrawStages();
+    if (state.drag) {
+      movePoseTo(state.drag, p.world[0], p.world[1]);
       return;
     }
     if (state.tool === "polygon" && state.draw.verts.length > 0) {
@@ -669,8 +663,7 @@
       }
       const hints = {
         polygon: "Click to place polygon vertices. Double-click (or press Enter) to close. Esc to cancel.",
-        start:   "Click anywhere to relocate start, or drag the green marker.",
-        goal:    "Click anywhere to relocate goal, or drag the red marker.",
+        move:    "Click to relocate the nearest pose (start/goal), or drag its marker.",
         erase:   "Click a polygon to delete it.",
       };
       setHint(hints[state.tool]);
@@ -726,6 +719,8 @@
     state.draw.verts = []; state.draw.hover = null;
     state.result = null;
     setStatus(null, null, null, null, null);
+    syncThetaSlider(startTheta, startThetaVal, state.start);
+    syncThetaSlider(goalTheta,  goalThetaVal,  state.goal);
     redrawMain(); redrawStages();
     log(`loaded preset "${p.name}"`);
   });
@@ -817,6 +812,10 @@
     stopAnimation();
     state.polygons = [];
     state.draw.verts = []; state.draw.hover = null;
+    state.start.theta = 0;
+    state.goal.theta  = 0;
+    startTheta.value = "0"; syncThetaLabel(startTheta, startThetaVal);
+    goalTheta.value  = "0"; syncThetaLabel(goalTheta,  goalThetaVal);
     state.result = null;
     state.esdfCanvas = null;
     setStatus(null, null, null, null, null);
@@ -834,6 +833,40 @@
       if (state.result) redrawMain();
     });
   }
+
+  // ----------------------------------------------------------- heading sliders
+  // The sliders report degrees; Pose2D.theta is radians, so we convert here.
+  // Moving either slider invalidates the last plan (a different start/goal
+  // heading produces a different trajectory even when x/y are unchanged).
+  const DEG = Math.PI / 180;
+  function syncThetaLabel(slider, label) {
+    const deg = Number(slider.value);
+    label.textContent = `${deg}°`;
+  }
+  function syncThetaSlider(slider, label, pose) {
+    const deg = Math.round((pose.theta || 0) / DEG);
+    slider.value = String(deg);
+    syncThetaLabel(slider, label);
+  }
+  function bindThetaSlider(slider, label, pose, who) {
+    syncThetaLabel(slider, label);
+    slider.addEventListener("input", () => {
+      const deg = Number(slider.value);
+      pose.theta = deg * DEG;
+      syncThetaLabel(slider, label);
+      // heading tick is drawn from pose.theta, so just redraw
+      redrawMain(); redrawStages();
+    });
+    slider.addEventListener("change", () => {
+      // invalidate the cached plan only on release to avoid spamming the
+      // server while the user is still dragging
+      state.result = null;
+      setStatus(null, null, null, null, null);
+      log(`heading ${who} = ${Number(slider.value)}°`);
+    });
+  }
+  bindThetaSlider(startTheta, startThetaVal, state.start, "start");
+  bindThetaSlider(goalTheta,  goalThetaVal,  state.goal,  "goal");
 
   // ----------------------------------------------------------- boot
   checkHealth();

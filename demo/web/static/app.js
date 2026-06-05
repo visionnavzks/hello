@@ -599,6 +599,7 @@
     state.result = null;
     setStatus(null, null, null, null, null);
     redrawMain(); redrawStages();
+    schedulePlan();
   }
 
   mainCv.addEventListener("mousedown", (ev) => {
@@ -625,6 +626,7 @@
           state.result = null;
           setStatus(null, null, null, null, null);
           redrawMain(); redrawStages();
+          schedulePlan();
           return;
         }
       }
@@ -673,6 +675,7 @@
     setStatus(null, null, null, null, null);
     redrawMain(); redrawStages();
     log(`polygon added (${state.polygons[state.polygons.length - 1].length} verts)`);
+    schedulePlan();
   }
 
   function pointInPolygon(pt, poly) {
@@ -708,6 +711,10 @@
   }
 
   // ----------------------------------------------------------- plan / api
+  let _planTimer = null;
+  let _planning = false;
+  const PLAN_DEBOUNCE_MS = 300;
+
   async function checkHealth() {
     try {
       const r = await fetch("/api/health");
@@ -759,9 +766,12 @@
     syncThetaSlider(goalTheta,  goalThetaVal,  state.goal);
     redrawMain(); redrawStages();
     log(`loaded preset "${p.name}"`);
+    schedulePlan();
   });
 
-  btnPlan.addEventListener("click", async () => {
+  async function doPlan() {
+    if (_planning) return;
+    _planning = true;
     btnPlan.disabled = true;
     setHint("planning…");
     try {
@@ -795,10 +805,19 @@
       log(`network error: ${e}`, "err");
       setHint(`network error: ${e}`);
     } finally {
+      _planning = false;
       btnPlan.disabled = false;
       redrawMain(); redrawStages();
     }
-  });
+  }
+
+  function schedulePlan(immediate) {
+    if (_planTimer) { clearTimeout(_planTimer); _planTimer = null; }
+    if (immediate) { doPlan(); return; }
+    _planTimer = setTimeout(() => { _planTimer = null; doPlan(); }, PLAN_DEBOUNCE_MS);
+  }
+
+  btnPlan.addEventListener("click", () => schedulePlan(true));
 
   // ----------------------------------------------------------- animation
   let animRAF = null;
@@ -866,7 +885,7 @@
   esdfAlpha.addEventListener("input", () => redrawMain());
   for (const el of [fpShape, fpW, fpH, fpR]) {
     el.addEventListener("change", () => {
-      if (state.result) redrawMain();
+      schedulePlan();
     });
   }
 
@@ -890,15 +909,8 @@
       const deg = Number(slider.value);
       pose.theta = deg * DEG;
       syncThetaLabel(slider, label);
-      // heading tick is drawn from pose.theta, so just redraw
       redrawMain(); redrawStages();
-    });
-    slider.addEventListener("change", () => {
-      // invalidate the cached plan only on release to avoid spamming the
-      // server while the user is still dragging
-      state.result = null;
-      setStatus(null, null, null, null, null);
-      log(`heading ${who} = ${Number(slider.value)}°`);
+      schedulePlan();
     });
   }
   bindThetaSlider(startTheta, startThetaVal, state.start, "start");

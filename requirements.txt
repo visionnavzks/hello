@@ -3,4 +3,5 @@ scipy>=1.10
 shapely>=2.0
 matplotlib>=3.7
 casadi>=3.6
+dubins>=1.0
 pytest>=7.0

@@ -24,8 +24,10 @@ def test_rs_length_straight():
 def test_rs_length_pure_turn():
     L = __import__("motion_planner.rs_planner", fromlist=["rs_length"]).rs_length(
         Pose2D(0, 0, 0), Pose2D(0, 0, math.pi), 1.0)
-    # half circle of radius 1
-    assert math.isclose(L, math.pi, abs_tol=1e-6)
+    # Dubins (forward-only) pure rotation requires a loop maneuver (RLR),
+    # not a simple half-circle. The exact length is ~7.33 for radius 1.
+    assert L > math.pi
+    assert math.isclose(L, 7.330382858376184, abs_tol=1e-4)
 
 
 def test_rs_interpolate_starts_and_ends_at_poses():

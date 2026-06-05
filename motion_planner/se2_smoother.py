@@ -37,6 +37,7 @@ infeasible inputs (e.g. an RS warm-start grazing an obstacle).
 
 from __future__ import annotations
 
+import math
 from typing import Optional
 
 import casadi as ca
@@ -143,6 +144,15 @@ class SE2Smoother:
             dth = X[2, i + 1] - X[2, i]
             ds_sq = dx * dx + dy * dy + 1e-12
             opti.subject_to(dth * dth <= kmax_sq * ds_sq)
+
+        # ---- hard forward motion: each step must move forward ----
+        # Prevents the optimizer from creating backward zigzags.
+        # Uses the optimized heading for accuracy (nonlinear constraint).
+        for i in range(N - 1):
+            dx = X[0, i + 1] - X[0, i]
+            dy = X[1, i + 1] - X[1, i]
+            th = X[2, i]
+            opti.subject_to(dx * ca.cos(th) + dy * ca.sin(th) >= 0)
 
         # ---- initial guess ----
         opti.set_initial(X, poses.T)

@@ -59,7 +59,7 @@ class PlannerConfig:
     rs_anchor_min: int = 3                   # at least N anchors per segment
     rs_step: float = 0.05                    # sampling step on the RS arc
     rs_use_dubins_straight: bool = True
-    rs_lookahead_dist: float = 0.45          # arc length from start/goal
+    rs_lookahead_dist: float = 0.60          # arc length from start/goal
                                               # along smoothed_xy where the
                                               # first/last Dubins anchor
                                               # P_s / P_g is placed, so that
@@ -72,7 +72,7 @@ class PlannerConfig:
                                               # fraction of total
 
     # --- SE(2) smoother ----------------------------------------------------
-    se2_w_smooth: float = 1.0
+    se2_w_smooth: float = 10.0
     se2_w_obs: float = 25.0
     se2_w_curv: float = 1.0
     se2_w_vel: float = 0.1

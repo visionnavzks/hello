@@ -69,9 +69,10 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 /* ---------- main layout ---------- */
 .layout {
   display: grid;
-  grid-template-columns: 1fr 220px;
+  grid-template-columns: 280px 1fr 220px;
   gap: 12px;
   padding: 12px 16px;
+  align-items: start;
 }
 .stage-pane { position: relative; }
 .stage-pane canvas {
@@ -119,6 +120,154 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .swatch-final    { background: #a5d6ff; height: 4px; }
 .swatch-erase    { background: #f85149; height: 12px; width: 12px; border-radius: 50%; }
 .check { display: block; font-size: 12px; color: #c9d1d9; padding: 2px 0; }
+
+/* ---------- parameters panel (left) ---------- */
+.params-pane {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 0;
+  align-self: start;
+  max-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.params-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid #30363d;
+  background: #1c222b;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.params-header h3 { margin: 0; }
+.params-header .link {
+  background: none; border: none; color: #58a6ff;
+  font-size: 11px; cursor: pointer; padding: 2px 4px;
+}
+.params-header .link:hover { text-decoration: underline; }
+.params-body {
+  overflow-y: auto;
+  padding: 4px 0 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #30363d #161b22;
+}
+.params-loading { padding: 12px; color: #8b949e; font-size: 12px; }
+
+.params-cat {
+  border-bottom: 1px solid #21262d;
+}
+.params-cat:last-child { border-bottom: none; }
+.params-cat-head {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #c9d1d9;
+  font: 12px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+  user-select: none;
+  gap: 6px;
+}
+.params-cat-head:hover { background: #1c222b; }
+.params-cat-head .chev {
+  display: inline-block;
+  width: 10px;
+  color: #8b949e;
+  transition: transform 120ms ease;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.params-cat[data-open="true"] .chev { transform: rotate(90deg); }
+.params-cat-head .cat-name {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  color: #8b949e;
+  flex: 1;
+}
+.params-cat-head .cat-count {
+  font-size: 10px;
+  color: #6e7681;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.params-cat-body {
+  display: none;
+  padding: 4px 10px 10px;
+}
+.params-cat[data-open="true"] .params-cat-body { display: block; }
+
+.param-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.param-field .pname {
+  color: #c9d1d9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.param-field .pname[title] { cursor: help; }
+.param-field input[type="number"] {
+  width: 88px;
+  background: #0d1117;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: right;
+}
+.param-field input[type="number"]:focus {
+  outline: none;
+  border-color: #1f6feb;
+}
+.param-field input[type="checkbox"] {
+  accent-color: #1f6feb;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.param-field.pbool { grid-template-columns: 1fr auto; }
+.param-field .pval-bool {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #8b949e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.param-field .preset-btn {
+  background: #21262d;
+  color: #8b949e;
+  border: 1px solid #30363d;
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 10px;
+  line-height: 16px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+.param-field .preset-btn:hover { background: #30363d; color: #c9d1d9; }
+.param-field.dirty input[type="number"] { border-color: #d29922; }
+.param-field.dirty .pname::after {
+  content: " •";
+  color: #d29922;
+}
 
 /* ---------- stage panels ---------- */
 .stages {

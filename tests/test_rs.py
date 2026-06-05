@@ -76,7 +76,7 @@ def test_planner_handles_u_turn():
 
 def test_planner_lookahead_anchors():
     """First/last interior anchors should lie along smoothed_xy at the
-    configured lookahead arc length, not at smoothed_xy[1] / [-2]."""
+    configured lookahead arc length, with enough room for endpoint turns."""
     esdf = _esdf()
     cfg = default_config()
     cfg.rs_lookahead_dist = 0.5
@@ -87,9 +87,10 @@ def test_planner_lookahead_anchors():
         Pose2D(0, 0, 0), Pose2D(4, 0, 0), Path(pts))
     # The "real" RS anchors are exactly [start, P_s, P_g, goal] (4 entries)
     assert anchors.shape == (4, 2)
-    # P_s should be at x ≈ 0.5, P_g at x ≈ 3.5
-    np.testing.assert_allclose(anchors[1], [0.5, 0.0], atol=1e-6)
-    np.testing.assert_allclose(anchors[-2], [3.5, 0.0], atol=1e-6)
+    # Requested lookahead is 0.5, but the turn radius is also 0.5, so the
+    # planner gives endpoint Dubins arcs at least 2R = 1.0 m of room.
+    np.testing.assert_allclose(anchors[1], [1.0, 0.0], atol=1e-6)
+    np.testing.assert_allclose(anchors[-2], [3.0, 0.0], atol=1e-6)
     # tangents should be 0 (path is along +x)
     assert abs(tangents[1]) < 1e-6
     assert abs(tangents[2]) < 1e-6
@@ -98,8 +99,27 @@ def test_planner_lookahead_anchors():
     np.testing.assert_allclose(anchors[-1], [4, 0], atol=1e-6)
     # arc_range reports the lookahead distances for the middle polyline
     assert arc_range is not None
-    assert abs(arc_range[0] - 0.5) < 1e-6
-    assert abs(arc_range[1] - 3.5) < 1e-6
+    assert abs(arc_range[0] - 1.0) < 1e-6
+    assert abs(arc_range[1] - 3.0) < 1e-6
+
+
+def test_planner_endpoint_lookahead_avoids_goal_loop():
+    """Too-close endpoint anchors can force Dubins into an avoidable loop."""
+    esdf = _esdf()
+    cfg = default_config()
+    cfg.rs_lookahead_dist = 0.45
+    pl = RSPlanner(esdf, 0.3, cfg)
+    pts = np.array([
+        [-2.5, 0.0],
+        [-2.0, 0.30],
+        [-0.5, 1.00],
+        [1.75, 0.46],
+        [2.15, 0.26],
+        [2.5, 0.0],
+    ], dtype=float)
+    result = pl.plan(Pose2D(-2.5, 0.0, 0.0), Pose2D(2.5, 0.0, 0.0), Path(pts))
+
+    assert result.trajectory.poses[:, 0].max() <= 2.55
 
 
 def test_planner_lookahead_anchors_curved_path():
@@ -115,15 +135,15 @@ def test_planner_lookahead_anchors_curved_path():
         Pose2D(1, 0, math.pi / 2), Pose2D(-1, 0, math.pi / 2),
         Path(pts))
     assert anchors.shape == (4, 2)
-    # P_s is at arc length 0.5 along the polyline approximation; compute
+    # P_s is at arc length max(requested lookahead, 2R) along the polyline;
     # the expected point by re-running arc-length sampling on the same
     # polyline (the discrete pts are an approximation of the unit arc)
     from motion_planner.rs_planner import _arclength_point
     segs = np.linalg.norm(np.diff(pts, axis=0), axis=1)
     cum = np.concatenate([[0.0], np.cumsum(segs)])
-    P_s_expected, _, _ = _arclength_point(pts, cum, 0.5)
+    P_s_expected, _, _ = _arclength_point(pts, cum, 1.0)
     np.testing.assert_allclose(anchors[1], P_s_expected, atol=1e-9)
-    P_g_expected, _, _ = _arclength_point(pts, cum, float(cum[-1] - 0.5))
+    P_g_expected, _, _ = _arclength_point(pts, cum, float(cum[-1] - 1.0))
     np.testing.assert_allclose(anchors[-2], P_g_expected, atol=1e-9)
     # start and goal endpoints are still the actual input poses
     np.testing.assert_allclose(anchors[0], [1, 0], atol=1e-6)

@@ -70,6 +70,31 @@ def test_smoother_enforces_curvature_bound():
     )
 
 
+def test_smoother_aligns_heading_with_motion_direction():
+    """SE(2) smoothing should not decouple footprint heading from path tangent."""
+    cfg = default_config()
+    esdf = ESDF(MapSpec(polygons=[], bounds=(-3, -3, 3, 3)), cfg)
+    sm = SE2Smoother(esdf, 0.2, cfg)
+    n = 30
+    ts = np.linspace(0, 1, n)
+    xs = -2.0 + 4.0 * ts
+    ys = 0.45 * np.sin(2.0 * np.pi * ts)
+    dx = np.gradient(xs)
+    dy = np.gradient(ys)
+    thetas = np.arctan2(dy, dx)
+    poses = np.column_stack([xs, ys, thetas])
+
+    out = sm.smooth(SE2Trajectory(poses))
+    seg = np.diff(out.poses[:, :2], axis=0)
+    tangents = np.arctan2(seg[:, 1], seg[:, 0])
+    heading_err = np.arctan2(
+        np.sin(out.poses[:-1, 2] - tangents),
+        np.cos(out.poses[:-1, 2] - tangents),
+    )
+
+    assert np.max(np.abs(heading_err)) < 1e-3
+
+
 def test_smoother_enforces_hard_collision_constraint():
     """Every interior pose must respect ESDF >= R + safety_margin."""
     wall = Polygon([(0.0, -2.0), (0.3, -2.0), (0.3, 2.0), (0.0, 2.0)])

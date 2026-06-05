@@ -153,6 +153,7 @@ class SE2Smoother:
             dy = X[1, i + 1] - X[1, i]
             th = X[2, i]
             opti.subject_to(dx * ca.cos(th) + dy * ca.sin(th) >= 0)
+            opti.subject_to(-dx * ca.sin(th) + dy * ca.cos(th) == 0)
 
         # ---- initial guess ----
         opti.set_initial(X, poses.T)

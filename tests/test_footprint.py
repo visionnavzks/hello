@@ -36,6 +36,41 @@ def test_rect_world_points_count():
     assert np.isclose(pts[:, 1].min(), -0.2)
 
 
+def test_rect_front_axis_points_along_x_at_theta_zero():
+    """Body-frame convention: +X is 'front', +Y is 'left'.
+
+    At theta=0 the front edge midpoint (first of the 4 mids) must lie on
+    the world +X axis.  This pins the absolute orientation so the footprint
+    cannot silently be defined with 'front' along +Y (the historical bug).
+    """
+    fp = RectFootprint(0.6, 0.4)
+    pts = fp.world_points(Pose2D(0, 0, 0))
+    # corners (4) come first, then mids (4), then centre (1) -> front mid is at idx 4
+    front_mid = pts[4]
+    assert np.isclose(front_mid[0], 0.3), f"front mid x should be +W/2, got {front_mid}"
+    assert np.isclose(front_mid[1], 0.0), f"front mid y should be 0, got {front_mid}"
+    # left mid (idx 5) must lie on the world +Y axis
+    left_mid = pts[5]
+    assert np.isclose(left_mid[0], 0.0)
+    assert np.isclose(left_mid[1], 0.2)
+
+
+def test_rect_front_axis_rotates_with_theta():
+    """The front edge must track theta: (cos θ, sin θ) * W/2 from centre.
+
+    Catches any future change that decouples heading from the body frame.
+    """
+    fp = RectFootprint(0.6, 0.4)
+    for theta in (0.0, 0.5, 1.2, -0.7, np.pi / 2, -np.pi / 2):
+        pose = Pose2D(0.0, 0.0, theta)
+        pts = fp.world_points(pose)
+        front = pts[4]
+        expected = np.array([np.cos(theta), np.sin(theta)]) * 0.3
+        assert np.allclose(front, expected, atol=1e-9), (
+            f"theta={theta}: front mid = {front}, expected {expected}"
+        )
+
+
 def test_rect_rotation_90_deg():
     fp = RectFootprint(0.6, 0.4)
     pts = fp.world_points(Pose2D(0, 0, np.pi / 2))

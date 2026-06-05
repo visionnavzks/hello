@@ -339,3 +339,78 @@ def test_footprint_bad_shape(client):
                           "footprint": {"shape": "polygon"}})
     j = r.get_json()
     assert j["ok"] is False
+
+
+# ---------------------------------------------------------------- /api/config
+def test_config_schema(client):
+    r = client.get("/api/config")
+    assert r.status_code == 200
+    j = r.get_json()
+    cats = j["categories"]
+    assert isinstance(cats, list) and len(cats) >= 5
+    seen_keys = set()
+    for cat in cats:
+        assert "name" in cat and "fields" in cat
+        for f in cat["fields"]:
+            # every field has at least key/type/label/default/help
+            assert {"key", "type", "label", "default", "help"} <= set(f)
+            assert f["type"] in ("int", "float", "bool")
+            assert f["key"] not in seen_keys, f"duplicate key {f['key']}"
+            seen_keys.add(f["key"])
+            # numeric fields also carry min/max/step
+            if f["type"] in ("int", "float"):
+                assert {"min", "max", "step"} <= set(f)
+    # spot-check a couple of well-known fields
+    keys = {f["key"] for cat in cats for f in cat["fields"]}
+    assert {"esdf_resolution", "astar_max_iter", "se2_v_max",
+            "validator_samples", "random_seed",
+            "rs_use_dubins_straight"} <= keys
+
+
+def test_plan_with_config_override(client):
+    """Overriding a PlannerConfig value should still produce a valid plan."""
+    body = _valid_body(polygons=[])
+    body["config"] = {
+        "astar_max_iter": 50000,
+        "shortcut_iters": 10,
+        "smooth_iters":   20,
+        "se2_iters":      20,
+        "validator_samples": 40,
+        "random_seed":    42,
+        "rs_use_dubins_straight": False,
+    }
+    r = client.post("/api/plan", json=body)
+    assert r.status_code == 200, r.data
+    j = r.get_json()
+    assert j["ok"] is True
+    assert j["stages"]["final"]
+
+
+def test_plan_rejects_unknown_config_key(client):
+    body = _valid_body(polygons=[])
+    body["config"] = {"totally_made_up": 1}
+    r = client.post("/api/plan", json=body)
+    assert r.status_code == 400
+    j = r.get_json()
+    assert j["ok"] is False
+    assert "totally_made_up" in j["error"]
+
+
+def test_plan_rejects_out_of_range_config(client):
+    body = _valid_body(polygons=[])
+    body["config"] = {"astar_max_iter": -1}
+    r = client.post("/api/plan", json=body)
+    assert r.status_code == 400
+    j = r.get_json()
+    assert j["ok"] is False
+    assert "astar_max_iter" in j["error"]
+
+
+def test_plan_rejects_wrong_config_type(client):
+    body = _valid_body(polygons=[])
+    body["config"] = {"rs_use_dubins_straight": "yes"}
+    r = client.post("/api/plan", json=body)
+    assert r.status_code == 400
+    j = r.get_json()
+    assert j["ok"] is False
+    assert "boolean" in j["error"]

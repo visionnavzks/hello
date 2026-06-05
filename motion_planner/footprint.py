@@ -65,9 +65,17 @@ class CircleFootprint(Footprint):
 
 
 class RectFootprint(Footprint):
-    """A rectangle footprint of width ``W`` (x-axis) by height ``H`` (y-axis)
-    in the body frame.  World sample points = 4 corners + 4 edge midpoints
-    + the centre (9 points)."""
+    """A rectangle footprint of length ``W`` (x-axis, front-back) by width
+    ``H`` (y-axis, left-right) in the body frame.
+
+    Convention: the body frame is right-handed with ``+X`` pointing to the
+    **front** of the robot and ``+Y`` pointing to the **left**.  This is
+    consistent with the rest of the planner, where ``theta = 0`` means the
+    robot is facing the world ``+X`` axis (i.e. its ``+X`` body axis aligns
+    with world ``+X``).
+
+    World sample points = 4 corners + 4 edge midpoints + the centre (9 points).
+    """
 
     name = "rect"
 
@@ -77,19 +85,19 @@ class RectFootprint(Footprint):
         self.W = float(width)
         self.H = float(height)
         hx, hy = self.W * 0.5, self.H * 0.5
-        # 4 corners in body frame (CCW)
+        # 4 corners in body frame (CCW starting from front-right)
         self._body = np.array([
-            [ hx,  hy],   # front-right
-            [-hx,  hy],   # front-left
-            [-hx, -hy],   # back-left
-            [ hx, -hy],   # back-right
+            [ hx, -hy],   # front-right
+            [ hx,  hy],   # front-left
+            [-hx,  hy],   # back-left
+            [-hx, -hy],   # back-right
         ], dtype=float)
-        # 4 edge midpoints
+        # 4 edge midpoints (front, left, back, right)
         self._body_mid = np.array([
-            [ 0.0,  hy],   # front
-            [-hx,  0.0],  # left
-            [ 0.0, -hy],   # back
-            [ hx,  0.0],   # right
+            [ hx,  0.0],  # front  (along +X body axis)
+            [ 0.0,  hy],  # left   (along +Y body axis)
+            [-hx,  0.0],  # back   (along -X body axis)
+            [ 0.0, -hy],  # right  (along -Y body axis)
         ], dtype=float)
 
     def world_points(self, pose: Pose2D) -> np.ndarray:

@@ -50,6 +50,9 @@
   const showESDF  = document.getElementById("show-esdf");
   const esdfAlpha = document.getElementById("esdf-alpha");
 
+  const paramsBody   = document.getElementById("params-body");
+  const btnResetCfg  = document.getElementById("btn-reset-config");
+
   // --------------------------------------------------------------- state
   const state = {
     bounds: [-3, -3, 3, 3],
@@ -63,6 +66,8 @@
     animation: { active: false, t: 0, traj: null },
     esdfCanvas: null,                   // off-screen heatmap canvas
     esdfMax: 0,                         // max abs distance for colour scale
+    config: {},                         // PlannerConfig overrides, keyed by name
+    configSchema: null,                 // schema fetched from /api/config
   };
 
   const MARKER_R = 9;          // px radius for start/goal hit test
@@ -782,6 +787,9 @@
         goal:  state.goal,
         footprint: footprintSpec(),
       };
+      if (state.config && Object.keys(state.config).length > 0) {
+        body.config = state.config;
+      }
       const r = await fetch("/api/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -916,9 +924,152 @@
   bindThetaSlider(startTheta, startThetaVal, state.start, "start");
   bindThetaSlider(goalTheta,  goalThetaVal,  state.goal,  "goal");
 
+  // ----------------------------------------------------------- params panel
+  // Renders a collapsible section per category.  All categories are
+  // collapsed by default; clicking a section header toggles it.  Only
+  // fields whose value differs from the default are sent to /api/plan
+  // so the payload stays small and the server's defaults remain the
+  // source of truth.
+  function renderParamsPanel(schema) {
+    state.configSchema = schema;
+    state.config = {};
+    paramsBody.innerHTML = "";
+    if (!schema || !schema.categories || schema.categories.length === 0) {
+      paramsBody.innerHTML = '<div class="params-loading">no parameters</div>';
+      return;
+    }
+    for (const cat of schema.categories) {
+      const sec = document.createElement("section");
+      sec.className = "params-cat";
+      sec.dataset.open = "false";   // default: collapsed
+      const head = document.createElement("button");
+      head.className = "params-cat-head";
+      head.type = "button";
+      head.innerHTML =
+        '<span class="chev">▶</span>' +
+        `<span class="cat-name"></span>` +
+        `<span class="cat-count">${cat.fields.length}</span>`;
+      head.querySelector(".cat-name").textContent = cat.name;
+      head.addEventListener("click", () => {
+        sec.dataset.open = sec.dataset.open === "true" ? "false" : "true";
+      });
+      sec.appendChild(head);
+      const body = document.createElement("div");
+      body.className = "params-cat-body";
+      for (const f of cat.fields) {
+        body.appendChild(buildParamField(f));
+      }
+      sec.appendChild(body);
+      paramsBody.appendChild(sec);
+    }
+  }
+
+  function buildParamField(f) {
+    const row = document.createElement("div");
+    row.className = "param-field" + (f.type === "bool" ? " pbool" : "");
+    row.dataset.key = f.key;
+    row.dataset.default = String(f.default);
+    const name = document.createElement("span");
+    name.className = "pname";
+    name.textContent = f.label;
+    if (f.help) name.title = `${f.label} — ${f.help}`;
+    row.appendChild(name);
+    if (f.type === "bool") {
+      const wrap = document.createElement("label");
+      wrap.className = "pval-bool";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!f.default;
+      cb.addEventListener("change", () => {
+        recordParam(f, cb.checked, row);
+      });
+      const txt = document.createElement("span");
+      txt.textContent = cb.checked ? "on" : "off";
+      cb.addEventListener("change", () => { txt.textContent = cb.checked ? "on" : "off"; });
+      wrap.appendChild(cb);
+      wrap.appendChild(txt);
+      row.appendChild(wrap);
+    } else {
+      const wrap = document.createElement("span");
+      wrap.style.display = "inline-flex";
+      wrap.style.alignItems = "center";
+      const inp = document.createElement("input");
+      inp.type = "number";
+      if (f.min != null) inp.min = f.min;
+      if (f.max != null) inp.max = f.max;
+      if (f.step != null) inp.step = f.step;
+      inp.value = f.default;
+      inp.addEventListener("change", () => {
+        const v = Number(inp.value);
+        if (Number.isFinite(v)) recordParam(f, f.type === "int" ? Math.round(v) : v, row);
+      });
+      wrap.appendChild(inp);
+      const reset = document.createElement("button");
+      reset.className = "preset-btn";
+      reset.type = "button";
+      reset.textContent = "↺";
+      reset.title = "reset to default";
+      reset.addEventListener("click", () => {
+        inp.value = f.default;
+        delete state.config[f.key];
+        row.classList.remove("dirty");
+        schedulePlan();
+      });
+      wrap.appendChild(reset);
+      row.appendChild(wrap);
+    }
+    return row;
+  }
+
+  function recordParam(f, value, row) {
+    const def = f.default;
+    const isDefault = (f.type === "bool") ? (value === !!def) : (Number(value) === Number(def));
+    if (isDefault) {
+      delete state.config[f.key];
+      row.classList.remove("dirty");
+    } else {
+      state.config[f.key] = value;
+      row.classList.add("dirty");
+    }
+    schedulePlan();
+  }
+
+  async function loadConfigSchema() {
+    try {
+      const r = await fetch("/api/config");
+      const j = await r.json();
+      renderParamsPanel(j);
+    } catch (e) {
+      paramsBody.innerHTML = `<div class="params-loading">failed: ${e}</div>`;
+      log(`failed to load config schema: ${e}`, "err");
+    }
+  }
+
+  btnResetCfg.addEventListener("click", () => {
+    if (!state.configSchema) return;
+    state.config = {};
+    for (const row of paramsBody.querySelectorAll(".param-field")) {
+      const key = row.dataset.key;
+      const def = row.dataset.default;
+      const cb = row.querySelector('input[type="checkbox"]');
+      const inp = row.querySelector('input[type="number"]');
+      const txt = row.querySelector(".pval-bool span");
+      if (cb) {
+        cb.checked = def === "true";
+        if (txt) txt.textContent = cb.checked ? "on" : "off";
+      } else if (inp) {
+        inp.value = def;
+      }
+      row.classList.remove("dirty");
+    }
+    log("parameters reset to defaults");
+    schedulePlan();
+  });
+
   // ----------------------------------------------------------- boot
   checkHealth();
   loadPresets();
+  loadConfigSchema();
   redrawMain();
   redrawStages();
   log("ready");

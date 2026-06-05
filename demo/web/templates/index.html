@@ -63,6 +63,16 @@
   </section>
 
   <main class="layout">
+    <aside class="params-pane" id="params-pane">
+      <div class="params-header">
+        <h3>Parameters</h3>
+        <button id="btn-reset-config" class="link" title="Reset all parameters to defaults">reset</button>
+      </div>
+      <div id="params-body" class="params-body">
+        <div class="params-loading">loading…</div>
+      </div>
+    </aside>
+
     <div class="stage-pane">
       <canvas id="main" width="900" height="640"></canvas>
       <div class="hint" id="hint">

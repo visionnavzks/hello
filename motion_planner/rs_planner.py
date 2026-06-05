@@ -231,12 +231,14 @@ class RSPlanner:
         total = float(cum[-1])
         cfg = self.cfg
 
-        L = cfg.rs_lookahead_dist
-        L_min = max(total * cfg.rs_lookahead_min_frac,
-                    cfg.rs_anchor_spacing * 0.5)
-        L = min(L, L_min)
+        min_turn_room = 2.0 * self._R
+        L = max(cfg.rs_lookahead_dist, min_turn_room)
+        L_cap = max(total * cfg.rs_lookahead_min_frac,
+                    cfg.rs_anchor_spacing * 0.5,
+                    min_turn_room)
+        L = min(L, L_cap)
         L = max(L, 1e-3)
-        if total <= 2.0 * L + 1e-3:
+        if total + 1e-3 < 2.0 * L:
             return self._anchors_line_fallback(start, goal)
 
         s_s = L

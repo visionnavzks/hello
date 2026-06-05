@@ -224,6 +224,7 @@ def _trivial_result(start: Pose2D, goal: Pose2D, fp) -> Dict[str, Any]:
             "resampled":   [[start.x, start.y], [goal.x, goal.y]],
             "smoothed_xy": [[start.x, start.y], [goal.x, goal.y]],
             "rs":          [single, single],
+            "rs_anchors":  [single],
             "final":       [single, single],
         },
         "validation": {
@@ -336,6 +337,7 @@ def plan():
                 "resampled":   _path_to_list(result.resampled),
                 "smoothed_xy": _path_to_list(result.smoothed_xy),
                 "rs":          _traj_to_list(result.rs_trajectory),
+                "rs_anchors":  np.asarray(result.rs_anchors, dtype=float).tolist(),
                 "final":       _traj_to_list(result.final_trajectory),
             },
             "validation": {

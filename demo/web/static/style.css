@@ -115,6 +115,7 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .swatch-resample { background: #ffa657; }
 .swatch-smooth   { background: #58a6ff; }
 .swatch-rs       { background: #bc8cff; }
+.swatch-rsanchor { background: #f78166; height: 10px; width: 10px; border-radius: 50%; }
 .swatch-final    { background: #a5d6ff; height: 4px; }
 .swatch-erase    { background: #f85149; height: 12px; width: 12px; border-radius: 50%; }
 .check { display: block; font-size: 12px; color: #c9d1d9; padding: 2px 0; }

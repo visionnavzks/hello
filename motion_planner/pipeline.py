@@ -40,6 +40,7 @@ class PipelineResult:
     resampled: Path
     smoothed_xy: Path
     rs_trajectory: SE2Trajectory
+    rs_anchors: np.ndarray            # (N, 3)  (x, y, theta) per anchor
     final_trajectory: SE2Trajectory
     l1: ValidationResult
     l2: ValidationResult
@@ -83,7 +84,9 @@ class HierarchicalPlanner:
         # 4) ESDF gradient smoother
         smoothed = self.xy_smooth.smooth(rs_in)
         # 5) RS / Dubins
-        rs_traj = self.rs.plan(start, goal, smoothed)
+        rs_result = self.rs.plan(start, goal, smoothed)
+        rs_traj = rs_result.trajectory
+        rs_anchors = rs_result.anchors
         # 6) SE(2) smoother
         final = self.se2.smooth(rs_traj)
         # 7) 3-level validator
@@ -103,6 +106,7 @@ class HierarchicalPlanner:
             resampled=rs_in,
             smoothed_xy=smoothed,
             rs_trajectory=rs_traj,
+            rs_anchors=rs_anchors,
             final_trajectory=final,
             l1=l1, l2=l2, l3=l3,
         )

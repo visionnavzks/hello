@@ -19,6 +19,7 @@ Public entry points
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -280,15 +281,51 @@ def _local_tangent(pts: np.ndarray, seg_idx: int) -> float:
 
 
 # ----------------------------------------------------------- planner
+@dataclass
+class RSPlanResult:
+    """Output of :meth:`RSPlanner.plan`.
+
+    Attributes
+    ----------
+    trajectory : SE2Trajectory
+        The full SE(2) trajectory: 2 endpoint RS segments + a polyline
+        middle sampled from ``ref_xy``.
+    anchors : np.ndarray
+        ``(N, 3)`` array of ``(x, y, theta)`` for the N "boundary"
+        anchors that the planner honours.  In the normal case N = 4
+        (start, P_s, P_g, goal); in the no-lookahead fallback N = 2
+        (start, goal).
+    """
+    trajectory: SE2Trajectory
+    anchors: np.ndarray
+
+
 class RSPlanner:
-    """Adaptive-anchor Dubins planner with heading relaxation.
+    """2-segment RS / Dubins planner.
 
     Despite the class name (kept for API compatibility with the design
-    spec), this implementation uses Dubins paths internally.  The
-    interface — ``plan(start, goal, ref_xy)`` — is identical to a true
-    RS planner, and the helper functions ``rs_length`` /
-    ``rs_interpolate`` are drop-in compatible with OMPL's
-    ``ReedsSheppStateSpace``.
+    spec), the production interpolation is a linear XY + linear
+    heading path; the SE(2) smoother downstream bends it into the
+    actual driving shape.  The Dubins solver is still available via
+    ``_solve_dubins`` for future use (e.g. short-range local
+    replanning).
+
+    Algorithm
+    ---------
+    1. Pick two lookahead anchors ``P_s`` / ``P_g`` on ``ref_xy`` at
+       arc length ``L`` from the start / goal ends.  These give the
+       endpoint RS segments enough room to turn.
+    2. Interpolate the start segment as
+       ``RS(start, θ=start.theta) → RS(P_s, θ=ref_tangent at P_s)``.
+    3. Sample the middle polyline from ``ref_xy`` between ``s_s`` and
+       ``s_g`` at the configured step, with each sample's heading set
+       to the local ref tangent.
+    4. Interpolate the goal segment as
+       ``RS(P_g, θ=ref_tangent at P_g) → RS(goal, θ=goal.theta)``.
+
+    Result: only 4 "real" anchors (start, P_s, P_g, goal) drive the
+    heading constraints; the polyline middle is purely a path-following
+    scaffold that the SE(2) smoother optimises over.
     """
 
     def __init__(
@@ -308,65 +345,108 @@ class RSPlanner:
         start: Pose2D,
         goal: Pose2D,
         ref_xy: Path,
-    ) -> SE2Trajectory:
-        anchors_xy, lookahead_tangents = self._adaptive_anchors(
+    ) -> RSPlanResult:
+        anchors_xy, lookahead_tangents, arc_range = self._adaptive_anchors(
             start, goal, ref_xy)
         n = len(anchors_xy)
-        # thetas[k] is the heading AT anchor k (n elements).
-        # Default = tangent of the (k-1, k) segment.  P_s and P_g (the
-        # lookahead anchors) override this with the local tangent of
-        # ref_xy at that arc length so the first/last segment knows the
-        # direction the path is actually going.
-        thetas = np.zeros(n, dtype=float)
-        thetas[0] = start.theta
-        for k in range(1, n):
-            thetas[k] = math.atan2(anchors_xy[k, 1] - anchors_xy[k - 1, 1],
-                                   anchors_xy[k, 0] - anchors_xy[k - 1, 0])
-        for k, t in lookahead_tangents.items():
-            thetas[k] = t
-        thetas[-1] = goal.theta
-        thetas = self._relax_headings(anchors_xy, thetas)
 
+        # --- fallback: no room for lookahead, single RS from start to goal
+        if n == 2:
+            seg = rs_interpolate(
+                Pose2D(anchors_xy[0, 0], anchors_xy[0, 1], start.theta),
+                Pose2D(anchors_xy[1, 0], anchors_xy[1, 1], goal.theta),
+                self._R, self.cfg.rs_step)
+            anchors = np.array([
+                [start.x, start.y, start.theta],
+                [goal.x,  goal.y,  goal.theta],
+            ])
+            return RSPlanResult(
+                trajectory=SE2Trajectory(seg.poses),
+                anchors=anchors,
+            )
+
+        # --- normal 4-anchor path
+        P_s, P_g = anchors_xy[1], anchors_xy[-2]
+        theta_Ps = lookahead_tangents[1]
+        theta_Pg = lookahead_tangents[2]
+
+        seg_start = rs_interpolate(
+            Pose2D(start.x, start.y, start.theta),
+            Pose2D(P_s[0], P_s[1], theta_Ps),
+            self._R, self.cfg.rs_step)
+
+        middle = (self._sample_middle(ref_xy, arc_range[0], arc_range[1])
+                  if arc_range is not None else np.empty((0, 3)))
+
+        seg_end = rs_interpolate(
+            Pose2D(P_g[0], P_g[1], theta_Pg),
+            Pose2D(goal.x, goal.y, goal.theta),
+            self._R, self.cfg.rs_step)
+
+        # Stitch: drop the duplicated endpoint at the join between
+        # seg_start and middle / between middle and seg_end.
         pieces: List[np.ndarray] = []
-        for i in range(n - 1):
-            p0 = Pose2D(anchors_xy[i, 0], anchors_xy[i, 1], float(thetas[i]))
-            p1 = Pose2D(anchors_xy[i + 1, 0], anchors_xy[i + 1, 1],
-                        float(thetas[i + 1]))
-            seg = rs_interpolate(p0, p1, self._R, self.cfg.rs_step)
-            if seg.poses.shape[0] > 0:
-                pieces.append(seg.poses)
+        if seg_start.poses.shape[0] > 1:
+            pieces.append(seg_start.poses[:-1])
+        if middle.shape[0] > 0:
+            pieces.append(middle)
+        if seg_end.poses.shape[0] > 0:
+            pieces.append(seg_end.poses)
+
         if not pieces:
-            return SE2Trajectory(np.array([[start.x, start.y, start.theta]]))
+            single = np.array([[start.x, start.y, start.theta]])
+            return RSPlanResult(
+                trajectory=SE2Trajectory(single),
+                anchors=single,
+            )
+
         out = np.concatenate(pieces, axis=0)
         keep = [0]
         for i in range(1, len(out)):
             if np.linalg.norm(out[i] - out[i - 1]) > 1e-6:
                 keep.append(i)
-        return SE2Trajectory(out[keep])
+
+        anchors = np.array([
+            [start.x, start.y, start.theta],
+            [P_s[0],  P_s[1],  theta_Ps],
+            [P_g[0],  P_g[1],  theta_Pg],
+            [goal.x,  goal.y,  goal.theta],
+        ])
+
+        return RSPlanResult(
+            trajectory=SE2Trajectory(out[keep]),
+            anchors=anchors,
+        )
 
     # --------------------------------------------------------- anchors
-    def _adaptive_anchors(self, start: Pose2D, goal: Pose2D,
-                          ref_xy: Path) -> Tuple[np.ndarray, dict]:
-        """Build the anchor polyline and per-anchor tangent hints.
+    def _adaptive_anchors(
+        self, start: Pose2D, goal: Pose2D, ref_xy: Path,
+    ) -> Tuple[np.ndarray, dict, Optional[Tuple[float, float]]]:
+        """Build the 4 boundary anchors: start, P_s, P_g, goal.
+
+        ``P_s`` / ``P_g`` are lookahead points on ``ref_xy`` at arc
+        length ``L`` from the start / goal ends, providing enough
+        room for the endpoint RS segments to turn.
 
         Returns
         -------
-        anchors : (N, 2) float array
-            Polyline ``[start.xy, P_s, ..., P_g, goal.xy]`` where
-            ``P_s`` / ``P_g`` are points on ``ref_xy`` at arc length
-            ``L_lookahead`` from the start / goal ends, taken so the
-            first and last Dubins segments have enough room to turn.
+        anchors_xy : (N, 2) array
+            ``N = 4`` for the normal case ``[start, P_s, P_g, goal]``;
+            ``N = 2`` for the fallback ``[start, goal]`` when there
+            is no room for a 2-sided lookahead.
         lookahead_tangents : dict[int, float]
-            Heading hints for the ``P_s`` and ``P_g`` anchors (the
-            local tangent of ``ref_xy`` at that arc length), consumed
-            by :meth:`plan` to set the default heading for those
-            anchors before :meth:`_relax_headings` softens them.
+            ``{1: theta_Ps, 2: theta_Pg}`` for the 4-anchor case; the
+            local ref tangent at each lookahead point, used to set
+            the heading at the join between the RS segment and the
+            polyline middle.
+        arc_range : (float, float) or None
+            ``(s_s, s_g)`` arc lengths on ``ref_xy`` of P_s and P_g.
+            ``None`` in the fallback case.
         """
         pts = ref_xy.points
         if len(pts) < 2:
-            return (np.array([[start.x, start.y], [goal.x, goal.y]]), {})
+            return (np.array([[start.x, start.y], [goal.x, goal.y]]), {}, None)
         if len(pts) == 2 or np.linalg.norm(pts[1] - pts[0]) < 1e-9:
-            # not enough interior points to do a lookahead
             return self._anchors_line_fallback(start, goal)
         segs = np.linalg.norm(np.diff(pts, axis=0), axis=1)
         if not np.any(segs > 1e-9):
@@ -383,8 +463,7 @@ class RSPlanner:
         L = max(L, 1e-3)
         if total <= 2.0 * L + 1e-3:
             # not enough room for a 2-sided lookahead; fall back to a
-            # straight start->goal line so the planner still produces
-            # a trajectory
+            # straight start->goal RS segment
             return self._anchors_line_fallback(start, goal)
 
         s_s = L
@@ -393,69 +472,51 @@ class RSPlanner:
         P_s, seg_s, _ = _arclength_point(pts, cum, s_s)
         P_g, seg_g, _ = _arclength_point(pts, cum, s_g)
 
-        # interior anchors: re-sample ref_xy between (s_s, s_g) at the
-        # adaptive spacing
-        inner_total = s_g - s_s
-        n_extra = max(int(inner_total / cfg.rs_anchor_spacing),
-                      cfg.rs_anchor_min - 4)
-        n_extra = max(n_extra, 0)
-        targets = np.linspace(s_s, s_g, n_extra + 2)[1:-1]
-        inner_anchors: List[np.ndarray] = []
-        for t in targets:
-            p, _, _ = _arclength_point(pts, cum, float(t))
-            inner_anchors.append(p)
-
-        anchors_list: List[np.ndarray] = [
-            np.array([start.x, start.y], dtype=float),
+        anchors_xy = np.array([
+            [start.x, start.y],
             P_s,
-            *inner_anchors,
             P_g,
-            np.array([goal.x, goal.y], dtype=float),
-        ]
-        anchors_xy = np.array(anchors_list)
+            [goal.x, goal.y],
+        ])
         lookahead_tangents = {
             1: _local_tangent(pts, seg_s),
-            len(anchors_xy) - 2: _local_tangent(pts, seg_g),
+            2: _local_tangent(pts, seg_g),
         }
-        return anchors_xy, lookahead_tangents
+        return anchors_xy, lookahead_tangents, (s_s, s_g)
 
-    def _anchors_line_fallback(self, start: Pose2D,
-                               goal: Pose2D) -> Tuple[np.ndarray, dict]:
-        d = math.hypot(goal.x - start.x, goal.y - start.y)
-        n_extra = max(int(d / self.cfg.rs_anchor_spacing),
-                      self.cfg.rs_anchor_min - 2)
-        n_extra = max(n_extra, 0)
-        targets = np.linspace(0.0, 1.0, n_extra + 2)
-        anchors = [
-            np.array([start.x + t * (goal.x - start.x),
-                      start.y + t * (goal.y - start.y)], dtype=float)
-            for t in targets
-        ]
-        return np.array(anchors), {}
+    def _anchors_line_fallback(
+        self, start: Pose2D, goal: Pose2D,
+    ) -> Tuple[np.ndarray, dict, None]:
+        return (np.array([[start.x, start.y], [goal.x, goal.y]]), {}, None)
 
-    def _relax_headings(self, anchors: np.ndarray,
-                        thetas: np.ndarray) -> np.ndarray:
-        cfg = self.cfg
-        if len(anchors) < 3:
-            return thetas
-        for k in range(1, len(thetas) - 1):
-            t_tan = math.atan2(anchors[k, 1] - anchors[k - 1, 1],
-                               anchors[k, 0] - anchors[k - 1, 0])
-            best_t = thetas[k]
-            best_cost = math.inf
-            for dth in np.linspace(-cfg.rs_delta_heading,
-                                   cfg.rs_delta_heading,
-                                   cfg.rs_heading_samples):
-                cand = _mod2pi(t_tan + dth)
-                p_prev = Pose2D(anchors[k - 1, 0], anchors[k - 1, 1],
-                                float(thetas[k - 1]))
-                p_cur = Pose2D(anchors[k, 0], anchors[k, 1], float(cand))
-                p_next = Pose2D(anchors[k + 1, 0], anchors[k + 1, 1],
-                                float(thetas[k + 1]))
-                cost = (rs_length(p_prev, p_cur, self._R)
-                        + rs_length(p_cur, p_next, self._R))
-                if cost < best_cost:
-                    best_cost = cost
-                    best_t = cand
-            thetas[k] = best_t
-        return thetas
+    def _sample_middle(self, ref_xy: Path, s_s: float,
+                       s_g: float) -> np.ndarray:
+        """Sample ``ref_xy`` between ``s_s`` and ``s_g`` at ``rs_step``.
+
+        The endpoints ``s_s`` and ``s_g`` are excluded to avoid
+        duplicating the RS-segment endpoints at the joins.  The
+        returned ``(M, 3)`` array carries the local ref tangent as
+        heading at each sample, so the polyline middle is a smooth
+        follow-the-path segment.
+        """
+        pts = ref_xy.points
+        if len(pts) < 2:
+            return np.empty((0, 3))
+        segs = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+        if not np.any(segs > 1e-9):
+            return np.empty((0, 3))
+        cum = np.concatenate([[0.0], np.cumsum(segs)])
+
+        n = int((s_g - s_s) / self.cfg.rs_step)
+        if n < 2:
+            return np.empty((0, 3))
+        s_samples = np.linspace(s_s, s_g, n + 1)[1:-1]
+        if len(s_samples) == 0:
+            return np.empty((0, 3))
+
+        middle: List[List[float]] = []
+        for s in s_samples:
+            p, seg_idx, _ = _arclength_point(pts, cum, float(s))
+            th = _local_tangent(pts, seg_idx)
+            middle.append([p[0], p[1], th])
+        return np.asarray(middle, dtype=float)

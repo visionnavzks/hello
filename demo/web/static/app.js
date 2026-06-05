@@ -44,6 +44,7 @@
   const showRS2   = document.getElementById("show-rs2");
   const showSM    = document.getElementById("show-sm");
   const showRS    = document.getElementById("show-rs");
+  const showRSAnchor = document.getElementById("show-rsanchor");
   const showFinal = document.getElementById("show-final");
   const showFP    = document.getElementById("show-fp");
   const showESDF  = document.getElementById("show-esdf");
@@ -311,6 +312,37 @@
     }
   }
 
+  // Draw the RS planner's anchor polyline as filled circles at each
+  // (x, y, theta), with a short heading tick.  Anchors are the discrete
+  // waypoints that the Dubins interpolation is stitched between, so
+  // showing them makes the path's piecewise structure obvious.
+  function drawRSAnchors(ctx, cv, anchors) {
+    if (!anchors || anchors.length === 0) return;
+    const [xmin, ymin, xmax, ymax] = state.bounds;
+    const sxPerM = cv.width / (xmax - xmin);
+    for (const a of anchors) {
+      const x = a[0], y = a[1], th = a.length > 2 ? a[2] : 0;
+      const [sx, sy] = worldToScreen(x, y, cv);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#f78166";
+      ctx.fill();
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // short heading tick (length in metres -> px)
+      const len = 8 / sxPerM;
+      const tx = sx + Math.cos(th) * len * sxPerM;
+      const ty = sy - Math.sin(th) * len * sxPerM;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tx, ty);
+      ctx.strokeStyle = "#f78166";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
   function drawPoseFootprint(ctx, cv, x, y, theta) {
     const fp = footprintSpec();
     ctx.save();
@@ -438,6 +470,7 @@
       if (showRS2.checked)   drawPathWithDots(ctx, mainCv, state.result.stages.resampled, "#ffa657", 1.5, 2);
       if (showSM.checked)    drawPath(ctx, mainCv, state.result.stages.smoothed_xy, "#58a6ff", 1.8);
       if (showRS.checked)    drawTrajectory(ctx, mainCv, state.result.stages.rs, "#bc8cff", 1.8);
+      if (showRSAnchor.checked) drawRSAnchors(ctx, mainCv, state.result.stages.rs_anchors);
       if (showFinal.checked) drawTrajectory(ctx, mainCv, state.result.stages.final, "#a5d6ff", 2.5);
       if (showFP.checked)    drawFootprintSamples(ctx, mainCv);
     }
@@ -469,6 +502,9 @@
       if (!data) continue;
       if (key === "final" || key === "rs") {
         drawTrajectory(ctx, cv, data, colorMap[key], 2);
+        if (key === "rs" && showRSAnchor.checked && state.result) {
+          drawRSAnchors(ctx, cv, state.result.stages.rs_anchors);
+        }
         if (key === "final" && showFP.checked) {
           const stride = Math.max(1, Math.floor(data.length / 8));
           for (let i = 0; i < data.length; i += stride) {
@@ -824,7 +860,7 @@
   });
 
   // ----------------------------------------------------------- misc ui
-  for (const el of [showAstar, showSC, showRS2, showSM, showRS, showFinal, showFP, showESDF]) {
+  for (const el of [showAstar, showSC, showRS2, showSM, showRS, showRSAnchor, showFinal, showFP, showESDF]) {
     el.addEventListener("change", () => { redrawMain(); redrawStages(); });
   }
   esdfAlpha.addEventListener("input", () => redrawMain());

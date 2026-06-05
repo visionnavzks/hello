@@ -44,9 +44,17 @@ def test_planner_anchors_anchored():
     esdf = _esdf()
     pl = RSPlanner(esdf, 0.5, default_config())
     ref = Path(np.array([[0, 0], [1, 0], [2, 0]], dtype=float))
-    traj = pl.plan(Pose2D(0, 0, 0), Pose2D(2, 0, 0), ref)
+    result = pl.plan(Pose2D(0, 0, 0), Pose2D(2, 0, 0), ref)
+    traj = result.trajectory
     np.testing.assert_allclose(traj.poses[0], [0, 0, 0], atol=1e-6)
     np.testing.assert_allclose(traj.poses[-1, :2], [2, 0], atol=1e-6)
+    # only the 4 boundary anchors are exposed: start, P_s, P_g, goal
+    assert result.anchors.shape == (4, 3)
+    np.testing.assert_allclose(result.anchors[0, :2], [0, 0], atol=1e-6)
+    np.testing.assert_allclose(result.anchors[-1, :2], [2, 0], atol=1e-6)
+    # endpoint headings must equal start.theta / goal.theta exactly
+    assert math.isclose(result.anchors[0, 2], 0.0, abs_tol=1e-9)
+    assert math.isclose(result.anchors[-1, 2], 0.0, abs_tol=1e-9)
 
 
 def test_planner_handles_u_turn():
@@ -54,7 +62,8 @@ def test_planner_handles_u_turn():
     pl = RSPlanner(esdf, 0.5, default_config())
     # start heading east, goal heading west -- requires a U turn
     ref = Path(np.array([[0, 0], [1, 0]], dtype=float))
-    traj = pl.plan(Pose2D(0, 0, 0), Pose2D(1, 0, math.pi), ref)
+    result = pl.plan(Pose2D(0, 0, 0), Pose2D(1, 0, math.pi), ref)
+    traj = result.trajectory
     # The position should land close to the goal (Dubins can't perfectly
     # execute a 180 deg heading change at radius 0.5 + distance 1, but
     # the start anchor and intermediate headings are still correct).
@@ -72,17 +81,23 @@ def test_planner_lookahead_anchors():
     pl = RSPlanner(esdf, 0.5, cfg)
     # long path so 2x lookahead fits comfortably
     pts = np.column_stack([np.linspace(0, 4, 9), np.zeros(9)])
-    anchors, tangents = pl._adaptive_anchors(
+    anchors, tangents, arc_range = pl._adaptive_anchors(
         Pose2D(0, 0, 0), Pose2D(4, 0, 0), Path(pts))
+    # The "real" RS anchors are exactly [start, P_s, P_g, goal] (4 entries)
+    assert anchors.shape == (4, 2)
     # P_s should be at x ≈ 0.5, P_g at x ≈ 3.5
     np.testing.assert_allclose(anchors[1], [0.5, 0.0], atol=1e-6)
     np.testing.assert_allclose(anchors[-2], [3.5, 0.0], atol=1e-6)
     # tangents should be 0 (path is along +x)
     assert abs(tangents[1]) < 1e-6
-    assert abs(tangents[len(anchors) - 2]) < 1e-6
+    assert abs(tangents[2]) < 1e-6
     # start and goal endpoints are still the actual input poses
     np.testing.assert_allclose(anchors[0], [0, 0], atol=1e-6)
     np.testing.assert_allclose(anchors[-1], [4, 0], atol=1e-6)
+    # arc_range reports the lookahead distances for the middle polyline
+    assert arc_range is not None
+    assert abs(arc_range[0] - 0.5) < 1e-6
+    assert abs(arc_range[1] - 3.5) < 1e-6
 
 
 def test_planner_lookahead_anchors_curved_path():
@@ -94,9 +109,10 @@ def test_planner_lookahead_anchors_curved_path():
     # semicircle of radius 1 -> arc length pi (~3.14)
     th = np.linspace(0, math.pi, 17)
     pts = np.column_stack([np.cos(th), np.sin(th)])
-    anchors, tangents = pl._adaptive_anchors(
+    anchors, tangents, _ = pl._adaptive_anchors(
         Pose2D(1, 0, math.pi / 2), Pose2D(-1, 0, math.pi / 2),
         Path(pts))
+    assert anchors.shape == (4, 2)
     # P_s is at arc length 0.5 along the polyline approximation; compute
     # the expected point by re-running arc-length sampling on the same
     # polyline (the discrete pts are an approximation of the unit arc)
@@ -105,7 +121,6 @@ def test_planner_lookahead_anchors_curved_path():
     cum = np.concatenate([[0.0], np.cumsum(segs)])
     P_s_expected, _, _ = _arclength_point(pts, cum, 0.5)
     np.testing.assert_allclose(anchors[1], P_s_expected, atol=1e-9)
-    # local tangent at P_s should be the same segment tangent
     P_g_expected, _, _ = _arclength_point(pts, cum, float(cum[-1] - 0.5))
     np.testing.assert_allclose(anchors[-2], P_g_expected, atol=1e-9)
     # start and goal endpoints are still the actual input poses
@@ -121,7 +136,8 @@ def test_planner_lookahead_short_path_falls_back():
     cfg.rs_lookahead_dist = 5.0   # absurdly large
     pl = RSPlanner(esdf, 0.5, cfg)
     ref = Path(np.array([[0, 0], [1, 0], [2, 0]], dtype=float))
-    traj = pl.plan(Pose2D(0, 0, 0), Pose2D(2, 0, 0), ref)
+    result = pl.plan(Pose2D(0, 0, 0), Pose2D(2, 0, 0), ref)
+    traj = result.trajectory
     np.testing.assert_allclose(traj.poses[0, :2], [0, 0], atol=1e-6)
     np.testing.assert_allclose(traj.poses[-1, :2], [2, 0], atol=1e-6)
 
@@ -130,7 +146,8 @@ def test_planner_start_heading_remains_hard_constraint():
     esdf = _esdf()
     pl = RSPlanner(esdf, 0.5, default_config())
     pts = np.column_stack([np.linspace(0, 3, 7), np.zeros(7)])
-    traj = pl.plan(Pose2D(0, 0, math.pi / 6), Pose2D(3, 0, 0), Path(pts))
+    result = pl.plan(Pose2D(0, 0, math.pi / 6), Pose2D(3, 0, 0), Path(pts))
+    traj = result.trajectory
     # first pose heading exactly = start.theta
     assert math.isclose(traj.poses[0, 2], math.pi / 6, abs_tol=1e-6)
     # last pose heading exactly = goal.theta
